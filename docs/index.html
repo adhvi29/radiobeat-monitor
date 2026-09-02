@@ -540,6 +540,46 @@ function drawPoincare(rr,alert){
 }
 
 /* ══ log ══ */
+/* Continuous waveform animation. Payloads arrive once a second; redrawing
+   only on arrival makes the trace look frozen, so each pair of payloads is
+   stitched together and a window glides across it with requestAnimationFrame
+   - the sweep a real monitor has. The samples are genuine; only the scroll
+   position between updates is interpolated. */
+const WAVE_SECONDS={brWave:25, hrWave:8};
+const WAVE_COLOUR ={brWave:"#7c5cff", hrWave:"#ff5a5f"};
+const waveBuf={brWave:{prev:null,cur:null,t:0}, hrWave:{prev:null,cur:null,t:0}};
+
+function pushWave(id,arr){
+  const st=waveBuf[id];
+  if(!arr||arr.length<2){ st.prev=null; st.cur=null; return; }
+  st.prev = st.cur || arr;
+  st.cur  = arr;
+  st.t    = performance.now();
+}
+function sampleAt(a,x){
+  const i0=Math.max(0,Math.floor(x)), i1=Math.min(i0+1,a.length-1);
+  const f=x-i0;
+  return a[i0]*(1-f)+a[i1]*f;
+}
+function animateWaves(){
+  for(const id in waveBuf){
+    const st=waveBuf[id], c=document.getElementById(id);
+    if(!c){ continue; }
+    if(!st.cur){ drawWave(c,null,WAVE_COLOUR[id]); continue; }
+    const n=st.cur.length;
+    const joined=st.prev.concat(st.cur);
+    const perSec=n/WAVE_SECONDS[id];
+    const f=Math.min((performance.now()-st.t)/1000,1);
+    const end=joined.length-1-(1-f)*perSec;
+    const start=Math.max(0,end-n);
+    const view=new Array(n);
+    for(let i=0;i<n;i++) view[i]=sampleAt(joined,start+i*(end-start)/(n-1));
+    drawWave(c,view,WAVE_COLOUR[id]);
+  }
+  requestAnimationFrame(animateWaves);
+}
+requestAnimationFrame(animateWaves);
+
 function logEvent(cls,text){
   const t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
   events.unshift({cls,text,t}); events=events.slice(0,8);
@@ -578,7 +618,7 @@ function render(d){
       $("srcPill").className="pill demo";
       ["brVal","hrVal"].forEach(i=>$(i).textContent="—");
       $("hrBadge").textContent=""; $("peopleTxt").textContent="";
-      drawWave($("brWave"),null,"#7c5cff"); drawWave($("hrWave"),null,"#ff5a5f");
+      pushWave("brWave",null); pushWave("hrWave",null);
       drawPoincare(null,false);
       ["mRmssd","mPnn","mCv","mEnt"].forEach(i=>setMetric(i,null,false));
       if(lastKey!=="offline"){ lastKey="offline";
@@ -594,8 +634,8 @@ function render(d){
   $("hrVal").textContent = (d.hr>0&&d.hr_locked) ? d.hr : "—";
   $("peopleTxt").textContent = d.people===1?"1 person":(d.people>1?d.people+" people":"");
   $("hrBadge").textContent = d.hr_locked?"locked":"searching";
-  drawWave($("brWave"),d.breath_wave,"#7c5cff");
-  drawWave($("hrWave"),d.heart_wave,"#ff5a5f");
+  pushWave("brWave",d.breath_wave);
+  pushWave("hrWave",d.heart_wave);
 
   const alert = d.rhythm_trust && d.sustained;
   drawPoincare(d.rr,alert);
