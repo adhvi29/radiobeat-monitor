@@ -554,8 +554,27 @@ function render(d){
       : "Not recording. Start a session to save tonight's readings.";
   }
   if(!d.ok){
-    $("hero").className="hero"; $("heroState").textContent="Warming up";
-    $("heroSub").textContent=(d.reason||"")+" — this takes about 30 seconds.";
+    if(d.offline){
+      /* The sensors stopped sending. Show nothing rather than the last
+         reading, which would look live and could be badly misleading. */
+      $("hero").className="hero warn";
+      $("heroState").textContent="Sensor offline";
+      $("heroSub").textContent="No data from the RadioBeat boards. Check both "+
+        "are powered, the receiver is plugged in over USB, and the transmitter "+
+        "is switched on. Monitoring resumes by itself once they reconnect.";
+      $("srcTxt").textContent="offline";
+      $("srcPill").className="pill demo";
+      ["brVal","hrVal"].forEach(i=>$(i).textContent="—");
+      $("hrBadge").textContent=""; $("peopleTxt").textContent="";
+      drawWave($("brWave"),null,"#7c5cff"); drawWave($("hrWave"),null,"#ff5a5f");
+      drawPoincare(null,false);
+      ["mRmssd","mPnn","mCv","mEnt"].forEach(i=>setMetric(i,null,false));
+      if(lastKey!=="offline"){ lastKey="offline";
+        logEvent("w","Sensor offline - no data from the boards"); }
+    } else {
+      $("hero").className="hero"; $("heroState").textContent="Warming up";
+      $("heroSub").textContent=(d.reason||"")+" — this takes about 30 seconds.";
+    }
     return;
   }
 
