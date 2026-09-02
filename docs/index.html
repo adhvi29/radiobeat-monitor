@@ -247,12 +247,14 @@ footer{margin-top:22px;color:var(--faint);font-size:11.5px;line-height:1.6}
       <div class="card breath">
         <div class="card-top"><span class="card-title">Breathing</span>
           <span class="card-badge" id="peopleTxt"></span></div>
+        <div style="font-size:10.5px;color:var(--faint);letter-spacing:.06em">last 25 seconds</div>
         <div><span class="val" id="brVal">—</span><span class="unit">breaths / min</span></div>
         <canvas class="wave" id="brWave"></canvas>
       </div>
       <div class="card heart">
         <div class="card-top"><span class="card-title">Heart rate</span>
           <span class="card-badge" id="hrBadge"></span></div>
+        <div style="font-size:10.5px;color:var(--faint);letter-spacing:.06em">last 8 seconds</div>
         <div><span class="val" id="hrVal">—</span><span class="unit">BPM</span></div>
         <canvas class="wave" id="hrWave"></canvas>
       </div>
@@ -515,10 +517,20 @@ function drawPoincare(rr,alert){
     x.beginPath(); x.moveTo(0,p); x.lineTo(w,p); x.stroke(); }
   if(!rr||rr.length<3){ x.fillStyle="#5a6076"; x.font="12px Inter,sans-serif";
     x.textAlign="center"; x.fillText("waiting for beats",w/2,h/2); return; }
-  let lo=Math.min(...rr), hi=Math.max(...rr);
-  const span=Math.max(hi-lo,120), cx=(lo+hi)/2;
-  lo=cx-span*0.72; hi=cx+span*0.72;
+  /* FIXED scale around the mean, not auto-scaled to the data. Auto-scaling
+     made a perfectly steady rhythm fill the box exactly like AFib, so the
+     picture carried no information at all. With a fixed +/-260 ms window a
+     normal rhythm is a tight knot and an irregular one visibly sprays out. */
+  const mean=rr.reduce((a,b)=>a+b,0)/rr.length;
+  let half=260;
+  const maxDev=Math.max(...rr.map(v=>Math.abs(v-mean)));
+  if(maxDev>half) half=maxDev*1.12;
+  const lo=mean-half, hi=mean+half;
   const m=16, sc=v=>m+(v-lo)/(hi-lo)*(w-2*m);
+  /* shaded band showing the spread a steady rhythm stays inside */
+  const g1=sc(mean-45), g2=sc(mean+45);
+  x.fillStyle="rgba(23,194,164,.07)";
+  x.fillRect(g1,h-g2,Math.max(g2-g1,2),Math.max(g2-g1,2));
   x.strokeStyle="#2c3146"; x.setLineDash([3,4]);
   x.beginPath(); x.moveTo(m,h-m); x.lineTo(w-m,m); x.stroke(); x.setLineDash([]);
   const col=alert?"255,59,107":"23,194,164";
@@ -779,9 +791,9 @@ function demoTick(){
   const br=14.5+0.6*Math.sin(demoT/7), hr=68+3*Math.sin(demoT/11);
   const n=180, bw=[], hw=[];
   for(let i=0;i<n;i++){
-    const t=i/n*20;
-    bw.push(Math.sin(2*Math.PI*br/60*t));
-    hw.push(Math.sin(2*Math.PI*hr/60*t)+0.25*Math.sin(4*Math.PI*hr/60*t));
+    const tb=i/n*25, th=i/n*8;          // 25 s breathing, 8 s heartbeat
+    bw.push(Math.sin(2*Math.PI*br/60*tb));
+    hw.push(Math.sin(2*Math.PI*hr/60*th)+0.25*Math.sin(4*Math.PI*hr/60*th));
   }
   const rr=demoRR(afib?"afib":"normal",30,hr);
   const d=rr.slice(1).map((v,i)=>v-rr[i]);
@@ -822,6 +834,15 @@ function connect(){
     setTimeout(connect,2500);
   };
 }
+let _lastPayload=null;
+const _origRender = render;
+render = function(d){ _lastPayload=d; return _origRender(d); };
+let _rz;
+window.addEventListener("resize",()=>{
+  clearTimeout(_rz);
+  _rz=setTimeout(()=>{ if(_lastPayload) _origRender(_lastPayload); },150);
+});
+
 async function boot(){
   try{ applySettings(await (await fetch("/api/settings")).json()); }
   catch(_){ applySettings({person:"Demo",alert_afib:true,
