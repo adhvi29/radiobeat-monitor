@@ -122,6 +122,44 @@ details.adv{margin-top:16px}
 details.adv summary{font-size:12.5px;color:var(--muted);cursor:pointer;font-weight:600}
 details.adv .body{margin-top:12px}
 
+/* ---------- hero session control ---------- */
+.hero-row{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.hero-main{flex:1;min-width:240px}
+.hero-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.sess-note{font-size:11.5px;color:var(--faint);text-align:right;max-width:190px;line-height:1.45}
+.rec-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  color:var(--alert)}
+.rec-chip .dot{animation:pulse 1.6s ease-in-out infinite}
+
+/* ---------- vitals ---------- */
+.vhead{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.beat{width:9px;height:9px;border-radius:50%;background:var(--coral);flex:none;
+  opacity:.35}
+.beat.on{animation:beat 1s ease-out infinite}
+@keyframes beat{0%{transform:scale(1);opacity:.9}
+  18%{transform:scale(1.75);opacity:1}
+  45%{transform:scale(1);opacity:.45}
+  100%{transform:scale(1);opacity:.35}}
+.vnum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.trend{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+  letter-spacing:.02em}
+.trend.up{color:#ff9f6b;border-color:rgba(255,159,107,.3)}
+.trend.dn{color:#6bb8ff;border-color:rgba(107,184,255,.3)}
+.rng{margin-top:12px}
+.rng-bar{position:relative;height:5px;border-radius:999px;background:var(--panel2);
+  border:1px solid var(--line);overflow:visible}
+.rng-ok{position:absolute;top:0;bottom:0;border-radius:999px;
+  background:rgba(23,194,164,.28)}
+.rng-dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+  transform:translate(-50%,-50%);border:2px solid var(--panel);
+  transition:left .6s cubic-bezier(.22,.61,.36,1)}
+.breath .rng-dot{background:var(--violet)}
+.heart  .rng-dot{background:var(--coral)}
+.rng-lab{display:flex;justify-content:space-between;font-size:10.5px;
+  color:var(--faint);margin-top:7px;letter-spacing:.03em}
+.val{transition:color .4s}
+
 /* ---------- session bar ---------- */
 .sbar{display:flex;align-items:center;gap:14px;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--r);padding:16px 20px;margin-bottom:16px;
@@ -233,30 +271,48 @@ footer{margin-top:22px;color:var(--faint);font-size:11.5px;line-height:1.6}
   <!-- ── live ── -->
   <section id="v-live">
     <div class="hero" id="hero">
-      <div class="hero-label">Rhythm status</div>
-      <div class="hero-state" id="heroState">Connecting…</div>
-      <div class="hero-sub" id="heroSub">Waiting for the monitor to come online.</div>
-    </div>
-
-    <div class="sbar">
-      <div class="t" id="sessTxt">Not recording. Start a session to save tonight's readings.</div>
-      <button class="btn" id="sessBtn">Start session</button>
+      <div class="hero-row">
+        <div class="hero-main">
+          <div class="hero-label">Rhythm status</div>
+          <div class="hero-state" id="heroState">Connecting…</div>
+          <div class="hero-sub" id="heroSub">Waiting for the monitor to come online.</div>
+        </div>
+        <div class="hero-side">
+          <button class="btn" id="sessBtn">Start session</button>
+          <div class="sess-note" id="sessTxt">Not recording</div>
+        </div>
+      </div>
     </div>
 
     <div class="grid">
       <div class="card breath">
-        <div class="card-top"><span class="card-title">Breathing</span>
+        <div class="card-top">
+          <span class="vhead"><span class="card-title">Breathing</span></span>
           <span class="card-badge" id="peopleTxt"></span></div>
-        <div style="font-size:10.5px;color:var(--faint);letter-spacing:.06em">last 25 seconds</div>
-        <div><span class="val" id="brVal">—</span><span class="unit">breaths / min</span></div>
+        <div class="vnum"><span class="val" id="brVal">—</span>
+          <span class="unit">breaths / min</span>
+          <span class="trend" id="brTrend" style="display:none"></span></div>
         <canvas class="wave" id="brWave"></canvas>
+        <div class="rng">
+          <div class="rng-bar"><div class="rng-ok" id="brOk"></div>
+            <div class="rng-dot" id="brDot" style="left:50%"></div></div>
+          <div class="rng-lab"><span>4</span><span>typical 12–20</span><span>30</span></div>
+        </div>
       </div>
       <div class="card heart">
-        <div class="card-top"><span class="card-title">Heart rate</span>
+        <div class="card-top">
+          <span class="vhead"><span class="beat" id="beatDot"></span>
+            <span class="card-title">Heart rate</span></span>
           <span class="card-badge" id="hrBadge"></span></div>
-        <div style="font-size:10.5px;color:var(--faint);letter-spacing:.06em">last 8 seconds</div>
-        <div><span class="val" id="hrVal">—</span><span class="unit">BPM</span></div>
+        <div class="vnum"><span class="val" id="hrVal">—</span>
+          <span class="unit">BPM</span>
+          <span class="trend" id="hrTrend" style="display:none"></span></div>
         <canvas class="wave" id="hrWave"></canvas>
+        <div class="rng">
+          <div class="rng-bar"><div class="rng-ok" id="hrOk"></div>
+            <div class="rng-dot" id="hrDot" style="left:50%"></div></div>
+          <div class="rng-lab"><span>40</span><span>resting 60–100</span><span>140</span></div>
+        </div>
       </div>
     </div>
 
@@ -602,8 +658,8 @@ function render(d){
     sessionId=d.session;
     $("sessBtn").textContent=sessionId?"Stop session":"Start session";
     $("sessTxt").innerHTML=sessionId
-      ? '<span class="rec"><span class="dot"></span> Recording session #'+sessionId+'</span>'
-      : "Not recording. Start a session to save tonight's readings.";
+      ? '<span class="rec-chip"><span class="dot"></span>Recording #'+sessionId+'</span>'
+      : "Saves tonight's readings";
   }
   if(!d.ok){
     if(d.offline){
@@ -617,6 +673,9 @@ function render(d){
       $("srcTxt").textContent="offline";
       $("srcPill").className="pill demo";
       ["brVal","hrVal"].forEach(i=>$(i).textContent="—");
+      $("beatDot").classList.remove("on");
+      ["brDot","hrDot"].forEach(i=>$(i).style.opacity=.25);
+      ["brTrend","hrTrend"].forEach(i=>$(i).style.display="none");
       $("hrBadge").textContent=""; $("peopleTxt").textContent="";
       pushWave("brWave",null); pushWave("hrWave",null);
       drawPoincare(null,false);
@@ -632,6 +691,22 @@ function render(d){
 
   $("brVal").textContent = d.breath>0 ? d.breath.toFixed(1) : "—";
   $("hrVal").textContent = (d.hr>0&&d.hr_locked) ? d.hr : "—";
+
+  if(d.breath>0){ $("brDot").style.left=pct(RANGES.br,d.breath)+"%";
+                  $("brDot").style.opacity=1; }
+  else $("brDot").style.opacity=.25;
+  const hrShown = d.hr>0 && d.hr_locked;
+  if(hrShown){ $("hrDot").style.left=pct(RANGES.hr,d.hr)+"%";
+               $("hrDot").style.opacity=1; }
+  else $("hrDot").style.opacity=.25;
+  trend("br", d.breath); trend("hr", hrShown ? d.hr : 0);
+
+  /* The indicator beats at the measured rate - the clearest signal that the
+     monitor is genuinely tracking a living person and not just drawing. */
+  const beat=$("beatDot");
+  if(hrShown){ beat.classList.add("on");
+               beat.style.animationDuration=(60/d.hr).toFixed(2)+"s"; }
+  else beat.classList.remove("on");
   $("peopleTxt").textContent = d.people===1?"1 person":(d.people>1?d.people+" people":"");
   $("hrBadge").textContent = d.hr_locked?"locked":"searching";
   pushWave("brWave",d.breath_wave);
@@ -874,6 +949,36 @@ function connect(){
     setTimeout(connect,2500);
   };
 }
+/* Normal-range bars. Showing a bare number tells a non-clinical user nothing;
+   showing where it sits against the typical range tells them everything. */
+const RANGES={br:{lo:4,hi:30,okLo:12,okHi:20}, hr:{lo:40,hi:140,okLo:60,okHi:100}};
+function pct(r,v){ return Math.max(0,Math.min(100,(v-r.lo)/(r.hi-r.lo)*100)); }
+(function paintRangeBands(){
+  for(const k of ["br","hr"]){
+    const r=RANGES[k], el=$(k+"Ok");
+    el.style.left=pct(r,r.okLo)+"%";
+    el.style.width=(pct(r,r.okHi)-pct(r,r.okLo))+"%";
+  }
+})();
+
+/* Trend against the reading ~30 s ago, so it reflects a real drift rather
+   than second-to-second jitter. */
+const hist={br:[], hr:[]};
+function trend(key, val){
+  const el=$(key+"Trend");
+  if(!(val>0)){ el.style.display="none"; return; }
+  const h=hist[key];
+  h.push(val); if(h.length>30) h.shift();
+  if(h.length<20){ el.style.display="none"; return; }
+  const older=h.slice(0,8).reduce((a,b)=>a+b,0)/8;
+  const recent=h.slice(-8).reduce((a,b)=>a+b,0)/8;
+  const d=recent-older, lim=key==="hr"?3:1.2;
+  el.style.display="";
+  el.className="trend"+(d>lim?" up":d<-lim?" dn":"");
+  el.textContent = d>lim?("↑ "+Math.abs(d).toFixed(0))
+                 : d<-lim?("↓ "+Math.abs(d).toFixed(0)) : "steady";
+}
+
 let _lastPayload=null;
 const _origRender = render;
 render = function(d){ _lastPayload=d; return _origRender(d); };
