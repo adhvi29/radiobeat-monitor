@@ -384,7 +384,7 @@ const $=id=>document.getElementById(id);
 const SB=(window.SUPABASE_CONFIG&&window.SUPABASE_CONFIG.url&&
           window.SUPABASE_CONFIG.anonKey)?window.SUPABASE_CONFIG:null;
 const LS="radiobeat.session";
-let token=null, user=null, mode="signin";
+let token=null, user=null, mode="signin", demoAuth=false;
 let events=[], lastKey="", sessionId=null, sim=null, settings={};
 
 /* ══ auth ══ */
@@ -403,7 +403,12 @@ function showErr(m){ const e=$("gateErr"); e.textContent=m; e.classList.remove("
 function enterApp(){
   $("gate").classList.add("hide"); $("app").classList.remove("hide");
   $("whoPill").textContent = user ? user.email : "local mode";
-  if(user){ $("acctK").textContent="Signed in";
+  if(user && user.demo){
+    $("acctK").textContent="Demo account";
+    $("acctD").textContent=user.email+" — a demonstration sign-in. Nothing is "+
+      "stored and no account exists. Run RadioBeat yourself for real accounts.";
+    $("signOut").classList.remove("hide");
+  } else if(user){ $("acctK").textContent="Signed in";
             $("acctD").textContent=user.email+" — session summaries sync to your Supabase project.";
             $("signOut").classList.remove("hide"); }
   boot();
@@ -438,11 +443,35 @@ if(SB){
   try{ const s=JSON.parse(localStorage.getItem(LS)||"null");
        if(s&&s.token){ token=s.token; user=s.user; } }catch(_){}
 } else {
-  $("gateSub").textContent="No account is configured, so the monitor runs locally on this computer.";
-  $("gateForm").classList.add("hide");
+  /* No Supabase configured (e.g. the public demo). Rather than hide sign-in
+     entirely, run a DEMO sign-in so the full flow can be shown. It accepts any
+     credentials, stores nothing and contacts no server — and says so, so it is
+     never mistaken for real authentication. */
+  demoAuth=true;
+  $("gateSub").innerHTML="<b style='color:#8b90a3'>Demo sign-in.</b> "+
+    "Any email and password will work — nothing is stored or sent anywhere. "+
+    "Running the monitor yourself gives you real accounts.";
+  $("gGo").addEventListener("click",demoSignIn);
+  $("gPass").addEventListener("keydown",e=>{ if(e.key==="Enter") demoSignIn(); });
+  $("gToggle").addEventListener("click",()=>{
+    mode = mode==="signin" ? "signup" : "signin";
+    $("gGo").textContent = mode==="signin" ? "Sign in" : "Create account";
+    $("gToggleTxt").textContent = mode==="signin" ? "New here?" : "Already have an account?";
+    $("gToggle").textContent = mode==="signin" ? "Create an account" : "Sign in";
+  });
+}
+
+function demoSignIn(){
+  const email=$("gEmail").value.trim(), pass=$("gPass").value;
+  if(!email||!pass) return showErr("Enter any email and password to continue.");
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return showErr("That does not look like an email address.");
+  user={email:email, demo:true};
+  enterApp();
 }
 $("gSkip").addEventListener("click",()=>{ token=null; user=null; enterApp(); });
-$("signOut").addEventListener("click",()=>{ localStorage.removeItem(LS); location.reload(); });
+$("signOut").addEventListener("click",()=>{ try{localStorage.removeItem(LS);}catch(_){}
+  location.reload(); });
 if(token) enterApp();
 
 /* ══ nav ══ */
