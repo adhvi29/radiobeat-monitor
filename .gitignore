@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+radiobeat.db
+*.log
+accuracy.csv
+radiobeat_log.csv
+.venv/
+radiobeat-env/

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RadioBeat Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b10; --panel:#12141c; --panel2:#171a24; --line:#232739;
+  --ink:#eef0f6; --muted:#8b90a3; --faint:#5a6076;
+  --ok:#17c2a4; --warn:#ff9f0a; --alert:#ff3b6b;
+  --violet:#7c5cff; --cyan:#00c2d1; --coral:#ff5a5f; --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,
+  BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;
+  min-height:100vh}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 20px 48px}
+button{font-family:inherit;cursor:pointer}
+.hide{display:none !important}
+
+/* ---------- auth gate ---------- */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{width:100%;max-width:392px;background:var(--panel);border:1px solid var(--line);
+  border-radius:20px;padding:34px 32px}
+.gate-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;
+  letter-spacing:-.02em;margin-bottom:6px}
+.gate-logo svg{width:28px;height:28px}
+.gate-sub{color:var(--muted);font-size:13.5px;margin-bottom:24px;line-height:1.55}
+label{display:block;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;margin:0 0 6px}
+input[type=email],input[type=password],input[type=text],input[type=number],select{
+  width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+  padding:11px 13px;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:14px}
+input:focus,select:focus{outline:none;border-color:var(--violet)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:11px 16px;font-size:13.5px;font-weight:600;transition:.15s}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:linear-gradient(100deg,#ff5a5f,#7c5cff);border:none;color:#fff}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.wide{width:100%}
+.btn.sm{padding:7px 12px;font-size:12px;border-radius:9px}
+.btn.on{background:rgba(255,59,107,.14);border-color:rgba(255,59,107,.4);color:var(--alert)}
+.btn.danger{color:var(--alert);border-color:rgba(255,59,107,.3)}
+.gate-alt{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
+.link{color:var(--violet);cursor:pointer;font-weight:600}
+.err{background:rgba(255,59,107,.1);border:1px solid rgba(255,59,107,.3);
+  color:#ff8fa8;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+
+/* ---------- header + nav ---------- */
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.logo svg{width:24px;height:24px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pill.live{color:var(--ok);border-color:rgba(23,194,164,.35);background:rgba(23,194,164,.08)}
+.pill.live .dot{animation:pulse 2s ease-in-out infinite}
+.pill.demo{color:var(--warn);border-color:rgba(255,159,10,.35);background:rgba(255,159,10,.08)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+nav{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:4px;margin-bottom:18px;width:fit-content}
+nav button{background:none;border:none;color:var(--muted);padding:8px 17px;
+  border-radius:9px;font-size:13.5px;font-weight:600;transition:.15s}
+nav button:hover{color:var(--ink)}
+nav button.on{background:var(--panel2);color:var(--ink)}
+
+/* ---------- hero ---------- */
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:28px 30px;margin-bottom:16px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;
+  background:var(--muted);transition:background .5s}
+.hero.ok::before{background:var(--ok)}
+.hero.warn::before{background:var(--warn)}
+.hero.alert::before{background:var(--alert)}
+.hero.alert{animation:glow 2.6s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,59,107,0)}
+  50%{box-shadow:0 0 34px -6px rgba(255,59,107,.4)}}
+.hero-label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;margin-bottom:10px}
+.hero-state{font-size:29px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
+.hero.ok .hero-state{color:var(--ok)}
+.hero.warn .hero-state{color:var(--warn)}
+.hero.alert .hero-state{color:var(--alert)}
+.hero-sub{color:var(--muted);font-size:14px;margin-top:9px;line-height:1.55;max-width:62ch}
+
+/* ---------- cards ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.card-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+.card-title{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);font-weight:600}
+.card-badge{font-size:11px;color:var(--faint)}
+.val{font-size:44px;font-weight:700;letter-spacing:-.035em;line-height:1.05;
+  font-variant-numeric:tabular-nums}
+.unit{font-size:14px;font-weight:500;color:var(--muted);margin-left:7px;letter-spacing:0}
+.wave{width:100%;height:70px;display:block;margin-top:6px}
+.breath .val{color:var(--violet)}
+.heart .val{color:var(--coral)}
+
+/* ---------- rhythm ---------- */
+.rhythm-grid{display:grid;grid-template-columns:210px 1fr;gap:24px;align-items:center}
+@media(max-width:760px){.rhythm-grid{grid-template-columns:1fr}}
+#poincare{width:210px;height:210px;display:block;background:var(--panel2);
+  border-radius:12px;border:1px solid var(--line)}
+@media(max-width:760px){#poincare{width:100%;max-width:250px}}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.metric-k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);font-weight:600}
+.metric-v{font-size:20px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.metric-n{font-size:11px;color:var(--faint);margin-top:2px}
+.metric.hot .metric-v{color:var(--alert)}
+.pc-cap{font-size:11px;color:var(--faint);margin-top:8px;text-align:center;line-height:1.45}
+details.adv{margin-top:16px}
+details.adv summary{font-size:12.5px;color:var(--muted);cursor:pointer;font-weight:600}
+details.adv .body{margin-top:12px}
+
+/* ---------- session bar ---------- */
+.sbar{display:flex;align-items:center;gap:14px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);padding:16px 20px;margin-bottom:16px;
+  flex-wrap:wrap}
+.sbar .t{font-size:13.5px;color:var(--muted);flex:1;min-width:200px;line-height:1.5}
+.rec{color:var(--alert);font-weight:600}
+.rec .dot{animation:pulse 1.6s ease-in-out infinite}
+
+/* ---------- events / lists ---------- */
+.ev{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:13.5px;align-items:flex-start}
+.ev:last-child{border-bottom:none}
+.ev-t{color:var(--faint);flex:none;font-size:12px;padding-top:1px;min-width:48px}
+.ev-d{width:7px;height:7px;border-radius:50%;flex:none;margin-top:6px;background:var(--faint)}
+.ev-x{color:var(--muted)}
+.ev.a .ev-d{background:var(--alert)} .ev.a .ev-x{color:var(--alert)}
+.ev.w .ev-d{background:var(--warn)}  .ev.w .ev-x{color:var(--warn)}
+.ev.o .ev-d{background:var(--ok)}
+.srow{display:flex;align-items:center;gap:14px;padding:13px 0;
+  border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap}
+.srow:last-child{border-bottom:none}
+.srow:hover .sname{color:var(--violet)}
+.sname{font-weight:600;font-size:14px;min-width:190px}
+.smeta{color:var(--muted);font-size:12.5px;flex:1}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;
+  background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.badge.a{color:var(--alert);border-color:rgba(255,59,107,.35);background:rgba(255,59,107,.08)}
+#histChart{width:100%;height:210px;display:block;background:var(--panel2);
+  border-radius:12px;border:1px solid var(--line);margin-top:6px}
+.empty{color:var(--faint);font-size:13.5px;padding:22px 0;text-align:center}
+
+/* ---------- settings ---------- */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.set-row:last-child{border-bottom:none}
+.set-k{font-weight:600;font-size:14px}
+.set-d{color:var(--faint);font-size:12.5px;margin-top:3px;max-width:52ch;line-height:1.5}
+.set-c{flex:none;min-width:150px}
+.set-c input,.set-c select{margin:0}
+.sw{width:46px;height:26px;border-radius:999px;background:var(--panel2);
+  border:1px solid var(--line);position:relative;transition:.2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
+  border-radius:50%;background:var(--faint);transition:.2s}
+.sw.on{background:rgba(124,92,255,.25);border-color:var(--violet)}
+.sw.on::after{left:23px;background:var(--violet)}
+
+footer{margin-top:22px;color:var(--faint);font-size:11.5px;line-height:1.6}
+.disclaimer{border-left:2px solid var(--line);padding-left:12px;max-width:70ch}
+</style>
+</head>
+<body>
+
+<!-- ══ auth gate ══════════════════════════════════════════════════════════ -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="url(#lg)" stroke-width="2.1"
+           stroke-linecap="round" stroke-linejoin="round">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24">
+          <stop offset="0" stop-color="#ff5a5f"/><stop offset=".5" stop-color="#7c5cff"/>
+          <stop offset="1" stop-color="#00c2d1"/></linearGradient></defs>
+        <path d="M2 12h4l2.5-7 4 14 2.5-7h5"/>
+      </svg>RadioBeat
+    </div>
+    <div class="gate-sub" id="gateSub">Sign in to sync sessions across devices.</div>
+    <div class="err hide" id="gateErr"></div>
+    <div id="gateForm">
+      <label>Email</label>
+      <input type="email" id="gEmail" autocomplete="email" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="gPass" autocomplete="current-password" placeholder="••••••••">
+      <button class="btn primary wide" id="gGo">Sign in</button>
+      <div class="gate-alt">
+        <span id="gToggleTxt">New here?</span>
+        <span class="link" id="gToggle">Create an account</span>
+      </div>
+    </div>
+    <div class="gate-alt" style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
+      <span class="link" id="gSkip">Continue without an account</span>
+      <div style="color:var(--faint);font-size:11.5px;margin-top:6px">
+        Everything stays on this computer.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ app ════════════════════════════════════════════════════════════════ -->
+<div class="wrap hide" id="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="url(#lg2)" stroke-width="2.1"
+           stroke-linecap="round" stroke-linejoin="round">
+        <defs><linearGradient id="lg2" x1="0" y1="0" x2="24" y2="24">
+          <stop offset="0" stop-color="#ff5a5f"/><stop offset=".5" stop-color="#7c5cff"/>
+          <stop offset="1" stop-color="#00c2d1"/></linearGradient></defs>
+        <path d="M2 12h4l2.5-7 4 14 2.5-7h5"/>
+      </svg>RadioBeat
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="srcPill"><span class="dot"></span><span id="srcTxt">connecting</span></span>
+    <span class="pill" id="whoPill">local</span>
+  </header>
+
+  <nav>
+    <button data-v="live" class="on">Live</button>
+    <button data-v="history">History</button>
+    <button data-v="settings">Settings</button>
+  </nav>
+
+  <!-- ── live ── -->
+  <section id="v-live">
+    <div class="hero" id="hero">
+      <div class="hero-label">Rhythm status</div>
+      <div class="hero-state" id="heroState">Connecting…</div>
+      <div class="hero-sub" id="heroSub">Waiting for the monitor to come online.</div>
+    </div>
+
+    <div class="sbar">
+      <div class="t" id="sessTxt">Not recording. Start a session to save tonight's readings.</div>
+      <button class="btn" id="sessBtn">Start session</button>
+    </div>
+
+    <div class="grid">
+      <div class="card breath">
+        <div class="card-top"><span class="card-title">Breathing</span>
+          <span class="card-badge" id="peopleTxt"></span></div>
+        <div><span class="val" id="brVal">—</span><span class="unit">breaths / min</span></div>
+        <canvas class="wave" id="brWave"></canvas>
+      </div>
+      <div class="card heart">
+        <div class="card-top"><span class="card-title">Heart rate</span>
+          <span class="card-badge" id="hrBadge"></span></div>
+        <div><span class="val" id="hrVal">—</span><span class="unit">BPM</span></div>
+        <canvas class="wave" id="hrWave"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:15px">Beat-to-beat analysis</div>
+      <div class="rhythm-grid">
+        <div>
+          <canvas id="poincare" width="210" height="210"></canvas>
+          <div class="pc-cap">Each dot is one heartbeat against the next.<br>
+            Tight line = steady · Scattered cloud = irregular</div>
+        </div>
+        <div class="metrics">
+          <div class="metric" id="mRmssd"><div class="metric-k">Beat variability</div>
+            <div class="metric-v">—</div><div class="metric-n">RMSSD</div></div>
+          <div class="metric" id="mPnn"><div class="metric-k">Big jumps</div>
+            <div class="metric-v">—</div><div class="metric-n">pNN50</div></div>
+          <div class="metric" id="mCv"><div class="metric-k">Spread</div>
+            <div class="metric-v">—</div><div class="metric-n">coefficient of variation</div></div>
+          <div class="metric" id="mEnt"><div class="metric-k">Unpredictability</div>
+            <div class="metric-v">—</div><div class="metric-n">Shannon entropy</div></div>
+        </div>
+      </div>
+      <details class="adv">
+        <summary>Signal details</summary>
+        <div class="body mono" id="advTxt" style="font-size:12px;color:var(--faint);line-height:1.7"></div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Session log</div>
+      <div id="evList"><div class="empty">Nothing yet.</div></div>
+    </div>
+  </section>
+
+  <!-- ── history ── -->
+  <section id="v-history" class="hide">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:6px">Recorded sessions</div>
+      <div id="sessList"><div class="empty">Loading…</div></div>
+    </div>
+    <div class="card hide" id="detailCard">
+      <div class="card-top" style="margin-bottom:10px">
+        <span class="card-title" id="detTitle">Session</span>
+        <button class="btn sm" id="detClose">Close</button>
+      </div>
+      <canvas id="histChart"></canvas>
+      <div style="display:flex;gap:18px;margin-top:12px;font-size:12px;color:var(--faint)">
+        <span><b style="color:var(--coral)">—</b> heart rate</span>
+        <span><b style="color:var(--violet)">—</b> breathing</span>
+        <span><b style="color:var(--alert)">▮</b> alert</span>
+      </div>
+      <div id="detAlerts" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- ── settings ── -->
+  <section id="v-settings" class="hide">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:6px">Monitor</div>
+      <div class="set-row">
+        <div><div class="set-k">Who is being monitored</div>
+          <div class="set-d">Shown on saved sessions.</div></div>
+        <div class="set-c"><input type="text" id="sPerson" placeholder="e.g. Grandma"></div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-k">Alert on irregular rhythm</div>
+          <div class="set-d">Records an alert when irregularity persists across
+            several windows — not on a single noisy reading.</div></div>
+        <div class="sw on" id="sAfib"></div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-k">Alert when nobody is detected</div>
+          <div class="set-d">Useful if someone should be in bed but isn't.</div></div>
+        <div class="sw" id="sAbsent"></div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-k">Save a reading every</div>
+          <div class="set-d">How often measurements are written to the session.</div></div>
+        <div class="set-c"><select id="sEvery">
+          <option value="2">2 seconds</option><option value="5">5 seconds</option>
+          <option value="15">15 seconds</option><option value="30">30 seconds</option>
+        </select></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:6px">Demonstration</div>
+      <div class="set-row">
+        <div><div class="set-k">Simulated rhythm</div>
+          <div class="set-d">Feeds a synthetic rhythm so the alert can be shown to
+            an audience. Always labelled SIMULATED on screen — a real arrhythmia
+            cannot be induced on demand.</div></div>
+        <div class="set-c" style="display:flex;gap:8px">
+          <button class="btn sm" id="simN">Normal</button>
+          <button class="btn sm" id="simA">AFib</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Account</div>
+      <div class="set-row">
+        <div><div class="set-k" id="acctK">Local mode</div>
+          <div class="set-d" id="acctD">No account configured. Everything is stored
+            on this computer only.</div></div>
+        <div class="set-c"><button class="btn sm danger hide" id="signOut">Sign out</button></div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="disclaimer">
+        <strong style="color:var(--muted)">Not a medical device.</strong>
+        RadioBeat is a student research prototype. It cannot diagnose atrial
+        fibrillation or any other condition, and it should never be used to make
+        a medical decision. Anyone concerned about their heart rhythm should
+        speak to a doctor.
+      </div>
+    </footer>
+  </section>
+</div>
+
+<script src="supabase-config.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const SB=(window.SUPABASE_CONFIG&&window.SUPABASE_CONFIG.url&&
+          window.SUPABASE_CONFIG.anonKey)?window.SUPABASE_CONFIG:null;
+const LS="radiobeat.session";
+let token=null, user=null, mode="signin";
+let events=[], lastKey="", sessionId=null, sim=null, settings={};
+
+/* ══ auth ══ */
+async function sbFetch(path, opts){
+  const o=opts||{};
+  o.headers=Object.assign({"apikey":SB.anonKey,"Content-Type":"application/json"},
+                          o.headers||{});
+  if(token) o.headers["Authorization"]="Bearer "+token;
+  const r=await fetch(SB.url+path,o);
+  const t=await r.text();
+  let j={}; try{ j=JSON.parse(t); }catch(_){}
+  if(!r.ok) throw new Error(j.error_description||j.msg||j.message||("HTTP "+r.status));
+  return j;
+}
+function showErr(m){ const e=$("gateErr"); e.textContent=m; e.classList.remove("hide"); }
+function enterApp(){
+  $("gate").classList.add("hide"); $("app").classList.remove("hide");
+  $("whoPill").textContent = user ? user.email : "local mode";
+  if(user){ $("acctK").textContent="Signed in";
+            $("acctD").textContent=user.email+" — session summaries sync to your Supabase project.";
+            $("signOut").classList.remove("hide"); }
+  boot();
+}
+async function doAuth(){
+  const email=$("gEmail").value.trim(), pass=$("gPass").value;
+  if(!email||!pass) return showErr("Enter an email and password.");
+  $("gateErr").classList.add("hide");
+  $("gGo").textContent="Please wait…"; $("gGo").disabled=true;
+  try{
+    const j = mode==="signin"
+      ? await sbFetch("/auth/v1/token?grant_type=password",
+          {method:"POST",body:JSON.stringify({email,password:pass})})
+      : await sbFetch("/auth/v1/signup",
+          {method:"POST",body:JSON.stringify({email,password:pass})});
+    if(!j.access_token){ showErr("Check your email to confirm the account, then sign in."); }
+    else { token=j.access_token; user=j.user||{email};
+           localStorage.setItem(LS,JSON.stringify({token,user})); enterApp(); }
+  }catch(e){ showErr(e.message); }
+  finally{ $("gGo").textContent=mode==="signin"?"Sign in":"Create account";
+           $("gGo").disabled=false; }
+}
+if(SB){
+  $("gGo").addEventListener("click",doAuth);
+  $("gPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doAuth(); });
+  $("gToggle").addEventListener("click",()=>{
+    mode = mode==="signin" ? "signup" : "signin";
+    $("gGo").textContent = mode==="signin" ? "Sign in" : "Create account";
+    $("gToggleTxt").textContent = mode==="signin" ? "New here?" : "Already have an account?";
+    $("gToggle").textContent = mode==="signin" ? "Create an account" : "Sign in";
+  });
+  try{ const s=JSON.parse(localStorage.getItem(LS)||"null");
+       if(s&&s.token){ token=s.token; user=s.user; } }catch(_){}
+} else {
+  $("gateSub").textContent="No account is configured, so the monitor runs locally on this computer.";
+  $("gateForm").classList.add("hide");
+}
+$("gSkip").addEventListener("click",()=>{ token=null; user=null; enterApp(); });
+$("signOut").addEventListener("click",()=>{ localStorage.removeItem(LS); location.reload(); });
+if(token) enterApp();
+
+/* ══ nav ══ */
+document.querySelectorAll("nav button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    ["live","history","settings"].forEach(v=>
+      $("v-"+v).classList.toggle("hide", v!==b.dataset.v));
+    if(b.dataset.v==="history") loadSessions();
+  });
+});
+
+/* ══ canvas ══ */
+function fit(c){
+  const r=c.getBoundingClientRect(), d=window.devicePixelRatio||1;
+  if(!r.width) return null;
+  c.width=r.width*d; c.height=r.height*d;
+  const x=c.getContext("2d"); x.setTransform(d,0,0,d,0,0);
+  return {x,w:r.width,h:r.height};
+}
+function drawWave(c,data,colour){
+  const f=fit(c); if(!f) return; const {x,w,h}=f; x.clearRect(0,0,w,h);
+  if(!data||data.length<2){ x.strokeStyle="#232739"; x.lineWidth=1;
+    x.beginPath(); x.moveTo(0,h/2); x.lineTo(w,h/2); x.stroke(); return; }
+  const n=data.length,pad=6,amp=(h-pad*2)/2,mid=h/2;
+  const pt=i=>[i/(n-1)*w, mid-Math.max(-1,Math.min(1,data[i]))*amp];
+  x.beginPath(); x.moveTo(...pt(0));
+  for(let i=1;i<n;i++) x.lineTo(...pt(i));
+  x.strokeStyle=colour; x.lineWidth=1.9; x.lineJoin="round"; x.stroke();
+  x.lineTo(w,h); x.lineTo(0,h); x.closePath();
+  const g=x.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,colour+"22"); g.addColorStop(1,colour+"00");
+  x.fillStyle=g; x.fill();
+}
+function drawPoincare(rr,alert){
+  const f=fit($("poincare")); if(!f) return; const {x,w,h}=f; x.clearRect(0,0,w,h);
+  x.strokeStyle="#232739"; x.lineWidth=1;
+  for(let i=1;i<4;i++){ const p=i/4*w;
+    x.beginPath(); x.moveTo(p,0); x.lineTo(p,h); x.stroke();
+    x.beginPath(); x.moveTo(0,p); x.lineTo(w,p); x.stroke(); }
+  if(!rr||rr.length<3){ x.fillStyle="#5a6076"; x.font="12px Inter,sans-serif";
+    x.textAlign="center"; x.fillText("waiting for beats",w/2,h/2); return; }
+  let lo=Math.min(...rr), hi=Math.max(...rr);
+  const span=Math.max(hi-lo,120), cx=(lo+hi)/2;
+  lo=cx-span*0.72; hi=cx+span*0.72;
+  const m=16, sc=v=>m+(v-lo)/(hi-lo)*(w-2*m);
+  x.strokeStyle="#2c3146"; x.setLineDash([3,4]);
+  x.beginPath(); x.moveTo(m,h-m); x.lineTo(w-m,m); x.stroke(); x.setLineDash([]);
+  const col=alert?"255,59,107":"23,194,164";
+  for(let i=0;i<rr.length-1;i++){
+    x.beginPath(); x.arc(sc(rr[i]),h-sc(rr[i+1]),3,0,6.284);
+    x.fillStyle="rgba("+col+","+(0.3+0.55*i/rr.length)+")"; x.fill(); }
+}
+
+/* ══ log ══ */
+function logEvent(cls,text){
+  const t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  events.unshift({cls,text,t}); events=events.slice(0,8);
+  $("evList").innerHTML=events.map(e=>
+    '<div class="ev '+e.cls+'"><span class="ev-t">'+e.t+'</span>'+
+    '<span class="ev-d"></span><span class="ev-x">'+e.text+'</span></div>').join("");
+}
+function setMetric(id,val,hot,suf){
+  const el=$(id); el.querySelector(".metric-v").textContent=(val===null?"—":val+(suf||""));
+  el.classList.toggle("hot",!!hot);
+}
+
+/* ══ render ══ */
+function render(d){
+  const sp=$("srcPill");
+  sp.className="pill "+(d.demo?"demo":(d.ok?"live":""));
+  $("srcTxt").textContent=d.demo?"demo data":(d.ok?"monitoring":"starting");
+
+  if(d.session!==sessionId){
+    sessionId=d.session;
+    $("sessBtn").textContent=sessionId?"Stop session":"Start session";
+    $("sessTxt").innerHTML=sessionId
+      ? '<span class="rec"><span class="dot"></span> Recording session #'+sessionId+'</span>'
+      : "Not recording. Start a session to save tonight's readings.";
+  }
+  if(!d.ok){
+    $("hero").className="hero"; $("heroState").textContent="Warming up";
+    $("heroSub").textContent=(d.reason||"")+" — this takes about 30 seconds.";
+    return;
+  }
+
+  $("brVal").textContent = d.breath>0 ? d.breath.toFixed(1) : "—";
+  $("hrVal").textContent = (d.hr>0&&d.hr_locked) ? d.hr : "—";
+  $("peopleTxt").textContent = d.people===1?"1 person":(d.people>1?d.people+" people":"");
+  $("hrBadge").textContent = d.hr_locked?"locked":"searching";
+  drawWave($("brWave"),d.breath_wave,"#7c5cff");
+  drawWave($("hrWave"),d.heart_wave,"#ff5a5f");
+
+  const alert = d.rhythm_trust && d.sustained;
+  drawPoincare(d.rr,alert);
+  if(d.rhythm_trust){
+    setMetric("mRmssd",d.rmssd,d.rmssd>90," ms");
+    setMetric("mPnn",d.pnn50,d.pnn50>45," %");
+    setMetric("mCv",d.cv.toFixed(3),d.cv>0.12,"");
+    setMetric("mEnt",d.entropy.toFixed(2),d.entropy>0.85,"");
+  } else ["mRmssd","mPnn","mCv","mEnt"].forEach(i=>setMetric(i,null,false));
+
+  $("advTxt").innerHTML =
+    "signal quality &nbsp;"+d.quality+"/3<br>"+
+    "packets &nbsp;"+(d.rate||0)+"/s<br>"+
+    "machines filtered &nbsp;"+(d.machines||0)+"<br>"+
+    "raw verdict &nbsp;"+(d.rhythm||"—");
+
+  let cls="",state="",sub="";
+  if(d.motion){ cls="warn"; state="Movement detected";
+    sub="Vitals pause while the person is moving. Monitoring resumes automatically once they settle."; }
+  else if(d.collide){ cls="warn"; state="Interference on the pulse";
+    sub="A machine in the room is running at almost exactly the heart rate, so the two cannot be separated. Try changing the fan speed."; }
+  else if(!d.present){ state="No one detected";
+    sub="Nobody is currently within range of the sensors."; }
+  else if(!d.rhythm_trust){ state="Measuring…";
+    sub="Breathing is being tracked. The heartbeat is not yet clear enough to judge rhythm — "+
+        (d.rhythm||"").replace(/^cannot assess\s*/,"")+"."; }
+  else if(d.sustained){ cls="alert"; state="Irregular rhythm detected";
+    sub="Beat-to-beat timing has stayed highly irregular, a pattern consistent with atrial fibrillation. This is not a diagnosis — please consult a doctor."; }
+  else if(d.rhythm_score>=3){ cls="warn"; state="Checking irregularity…";
+    sub="Some irregular beats seen. Waiting to confirm across several windows before raising an alert."; }
+  else if(d.rhythm_score===2){ cls="warn"; state="Borderline rhythm";
+    sub="Slight irregularity in beat timing. Keep monitoring; this also occurs with normal variation."; }
+  else { cls="ok"; state="Rhythm normal";
+    sub="Breathing and heartbeat are steady, with regular beat-to-beat timing."; }
+  if(d.sim) state+="  ·  SIMULATED";
+
+  $("hero").className="hero "+cls;
+  $("heroState").textContent=state; $("heroSub").textContent=sub;
+
+  const key=cls+state;
+  if(key!==lastKey){ lastKey=key;
+    logEvent({alert:"a",warn:"w",ok:"o"}[cls]||"i", state); }
+}
+
+/* ══ sessions ══ */
+async function syncSession(id){
+  if(!SB || !token || !user || !user.id) return;
+  try{
+    const d = await (await fetch("/api/session/"+id)).json();
+    const s = d.session;
+    const avg = a => a.length ? a.reduce((p,c)=>p+c,0)/a.length : null;
+    const hrs = d.readings.map(x=>x.hr).filter(v=>v>0);
+    const brs = d.readings.map(x=>x.breath).filter(v=>v>0);
+    await sbFetch("/rest/v1/sessions",{
+      method:"POST",
+      headers:{"Prefer":"return=minimal"},
+      body:JSON.stringify({
+        user_id:     user.id,
+        person:      s.person,
+        started_at:  new Date(s.started*1000).toISOString(),
+        ended_at:    s.ended ? new Date(s.ended*1000).toISOString() : null,
+        avg_hr:      avg(hrs),
+        avg_breath:  avg(brs),
+        alert_count: d.alerts.length
+      })
+    });
+    logEvent("o","Session #"+id+" synced to your account");
+  }catch(e){ logEvent("w","Cloud sync failed: "+e.message); }
+}
+
+$("sessBtn").addEventListener("click",async()=>{
+  const stopping = !!sessionId, id = sessionId;
+  const url  = stopping ? "/api/session/stop" : "/api/session/start";
+  const body = stopping ? {} : {person:settings.person};
+  await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+                   body:JSON.stringify(body)});
+  logEvent("i", stopping?"Session stopped":"Session started");
+  if(stopping && id) syncSession(id);
+});
+function fmtDur(a,b){
+  if(!b) return "in progress";
+  const m=Math.round((b-a)/60);
+  return m<60 ? m+" min" : Math.floor(m/60)+"h "+(m%60)+"m";
+}
+async function loadSessions(){
+  if(standalone){ $("sessList").innerHTML=
+    '<div class="empty">Session history is stored by the RadioBeat server.<br>'+
+    'Run it on the computer with the sensors to record and review nights.</div>';
+    return; }
+  const r=await fetch("/api/sessions"); const rows=await r.json();
+  if(!rows.length){ $("sessList").innerHTML=
+    '<div class="empty">No sessions yet. Press <b>Start session</b> on the Live tab.</div>';
+    return; }
+  $("sessList").innerHTML=rows.map(s=>
+    '<div class="srow" data-id="'+s.id+'">'+
+      '<span class="sname">'+(s.person||"Session")+' #'+s.id+'</span>'+
+      '<span class="smeta">'+new Date(s.started*1000).toLocaleString()+
+        ' · '+fmtDur(s.started,s.ended)+' · '+s.n+' readings'+
+        (s.avg_hr?' · avg '+Math.round(s.avg_hr)+' BPM':'')+'</span>'+
+      (s.alerts?'<span class="badge a">'+s.alerts+' alert'+(s.alerts>1?'s':'')+'</span>'
+               :'<span class="badge">clear</span>')+
+    '</div>').join("");
+  document.querySelectorAll(".srow").forEach(el=>
+    el.addEventListener("click",()=>openSession(el.dataset.id)));
+}
+async function openSession(id){
+  const r=await fetch("/api/session/"+id); const d=await r.json();
+  $("detailCard").classList.remove("hide");
+  $("detTitle").textContent=(d.session.person||"Session")+" #"+d.session.id;
+  drawHistory(d.readings,d.alerts);
+  $("detAlerts").innerHTML = d.alerts.length
+    ? d.alerts.map(a=>'<div class="ev a"><span class="ev-t">'+
+        new Date(a.ts*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+
+        '</span><span class="ev-d"></span><span class="ev-x">'+a.message+'</span></div>').join("")
+    : '<div class="empty">No alerts during this session.</div>';
+  $("detailCard").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("detClose").addEventListener("click",()=>$("detailCard").classList.add("hide"));
+function drawHistory(rd,alerts){
+  const f=fit($("histChart")); if(!f) return; const {x,w,h}=f;
+  x.clearRect(0,0,w,h);
+  if(!rd.length){ x.fillStyle="#5a6076"; x.font="13px Inter,sans-serif";
+    x.textAlign="center"; x.fillText("no readings",w/2,h/2); return; }
+  const t0=rd[0].ts, t1=rd[rd.length-1].ts||t0+1, m=26;
+  const X=t=>m+(t-t0)/Math.max(t1-t0,1)*(w-2*m);
+  x.strokeStyle="#232739"; x.lineWidth=1;
+  for(let i=0;i<=3;i++){ const y=m+i/3*(h-2*m);
+    x.beginPath(); x.moveTo(m,y); x.lineTo(w-m,y); x.stroke(); }
+  (alerts||[]).forEach(a=>{ x.fillStyle="rgba(255,59,107,.18)";
+    x.fillRect(X(a.ts)-2,m,4,h-2*m); });
+  const series=[["hr",[30,140],"#ff5a5f"],["breath",[4,32],"#7c5cff"]];
+  series.forEach(([k,[lo,hi],col])=>{
+    x.beginPath(); let started=false;
+    rd.forEach(r=>{ const v=r[k];
+      if(v==null||v<=0){ started=false; return; }
+      const y=h-m-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(h-2*m);
+      if(!started){ x.moveTo(X(r.ts),y); started=true; } else x.lineTo(X(r.ts),y); });
+    x.strokeStyle=col; x.lineWidth=1.8; x.lineJoin="round"; x.stroke();
+  });
+  x.fillStyle="#5a6076"; x.font="10px Inter,sans-serif"; x.textAlign="left";
+  x.fillText(new Date(t0*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),m,h-8);
+  x.textAlign="right";
+  x.fillText(new Date(t1*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),w-m,h-8);
+}
+
+/* ══ settings ══ */
+function applySettings(s){
+  settings=s;
+  $("sPerson").value=s.person||"";
+  $("sAfib").classList.toggle("on",!!s.alert_afib);
+  $("sAbsent").classList.toggle("on",!!s.alert_absent);
+  $("sEvery").value=String(s.record_every_s||5);
+}
+async function saveSettings(patch){
+  if(standalone){ applySettings(Object.assign({},settings,patch)); return; }
+  const r=await fetch("/api/settings",{method:"POST",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});
+  applySettings(await r.json());
+}
+$("sPerson").addEventListener("change",e=>saveSettings({person:e.target.value}));
+$("sEvery").addEventListener("change",e=>saveSettings({record_every_s:+e.target.value}));
+$("sAfib").addEventListener("click",()=>saveSettings({alert_afib:!settings.alert_afib}));
+$("sAbsent").addEventListener("click",()=>saveSettings({alert_absent:!settings.alert_absent}));
+function setSim(kind){
+  sim=(sim===kind)?null:kind;
+  $("simA").classList.toggle("on",sim==="afib");
+  $("simN").classList.toggle("on",sim==="normal");
+  fetch("/api/sim/"+(sim||"off"),{method:"POST"}).catch(()=>{});
+  logEvent("i", sim?("Simulated "+(sim==="afib"?"AFib":"normal")+" rhythm on")
+                  :"Simulation off");
+}
+$("simA").addEventListener("click",()=>setSim("afib"));
+$("simN").addEventListener("click",()=>setSim("normal"));
+
+/* ══ boot ══ */
+/* Standalone demo: with no server (e.g. opened from GitHub Pages) there is
+   no /stream to read, so the page generates its own plausible vitals. Every
+   number is synthetic and the interface says so. */
+let standalone=false, demoT=0;
+function demoRR(kind,seconds,hr){
+  const base=60/hr, out=[]; let total=0;
+  while(total<seconds){
+    let v = kind==="afib" ? base*(1+(Math.random()*2-1)*0.38)
+                          : base*(1+0.035*Math.sin(2*Math.PI*0.25*total)
+                                    +(Math.random()*2-1)*0.03);
+    v=Math.min(1.8,Math.max(0.35,v)); out.push(v*1000); total+=v;
+  }
+  return out;
+}
+function demoTick(){
+  demoT+=1;
+  const afib=Math.floor(demoT/40)%3===2;
+  const br=14.5+0.6*Math.sin(demoT/7), hr=68+3*Math.sin(demoT/11);
+  const n=180, bw=[], hw=[];
+  for(let i=0;i<n;i++){
+    const t=i/n*20;
+    bw.push(Math.sin(2*Math.PI*br/60*t));
+    hw.push(Math.sin(2*Math.PI*hr/60*t)+0.25*Math.sin(4*Math.PI*hr/60*t));
+  }
+  const rr=demoRR(afib?"afib":"normal",30,hr);
+  const d=rr.slice(1).map((v,i)=>v-rr[i]);
+  const mean=rr.reduce((a,b)=>a+b,0)/rr.length;
+  const sd=Math.sqrt(rr.reduce((a,b)=>a+(b-mean)*(b-mean),0)/rr.length);
+  render({
+    ok:true, demo:true, present:true, motion:false, collide:false,
+    breath:+br.toFixed(1), hr:Math.round(hr), hr_locked:true, quality:3,
+    people:1, machines:0, rate:0, breath_wave:bw, heart_wave:hw, rr:rr,
+    rhythm:afib?"IRREGULAR - AFib-like":"regular rhythm",
+    rhythm_trust:true, rhythm_score:afib?4:1, sustained:afib,
+    rmssd:Math.round(Math.sqrt(d.reduce((a,b)=>a+b*b,0)/d.length)),
+    cv:+(sd/mean).toFixed(3),
+    pnn50:Math.round(d.filter(v=>Math.abs(v)>50).length/d.length*100),
+    entropy:afib?0.93:0.71, sim:null, session:null, ts:Date.now()/1000
+  });
+}
+function goStandalone(){
+  if(standalone) return;
+  standalone=true;
+  $("sessBtn").disabled=true;
+  $("sessBtn").style.opacity=".45";
+  $("sessTxt").textContent="Recording needs the RadioBeat server running on a computer with the sensors attached.";
+  logEvent("w","No sensor server found - showing a self-contained demo");
+  setInterval(demoTick,1000); demoTick();
+}
+
+let es, gotData=false, tries=0;
+function connect(){
+  if(standalone) return;
+  try{ es=new EventSource("/stream"); }
+  catch(_){ return goStandalone(); }
+  es.onmessage=e=>{ gotData=true; tries=0;
+    try{ render(JSON.parse(e.data)); }catch(_){}; };
+  es.onerror=()=>{
+    es.close();
+    if(!gotData && ++tries>=2) return goStandalone();
+    setTimeout(connect,2500);
+  };
+}
+async function boot(){
+  try{ applySettings(await (await fetch("/api/settings")).json()); }
+  catch(_){ applySettings({person:"Demo",alert_afib:true,
+                           alert_absent:false,record_every_s:5}); }
+  logEvent("i","Monitor started");
+  connect();
+}
+})();
+</script>
+</body>
+</html>
