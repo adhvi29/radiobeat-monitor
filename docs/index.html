@@ -689,17 +689,22 @@ function render(d){
     return;
   }
 
-  $("brVal").textContent = d.breath>0 ? d.breath.toFixed(1) : "—";
-  $("hrVal").textContent = (d.hr>0&&d.hr_locked) ? d.hr : "—";
+  /* If nobody is in range the numbers are just noise fitted to an empty room,
+     so show nothing rather than a plausible-looking vital sign. Displaying
+     "48 BPM" beside "No one detected" is worse than showing a dash. */
+  const trustVitals = d.present && !d.motion;
+  const brShown = trustVitals && d.breath>0;
+  $("brVal").textContent = brShown ? d.breath.toFixed(1) : "—";
 
-  if(d.breath>0){ $("brDot").style.left=pct(RANGES.br,d.breath)+"%";
-                  $("brDot").style.opacity=1; }
+  if(brShown){ $("brDot").style.left=pct(RANGES.br,d.breath)+"%";
+               $("brDot").style.opacity=1; }
   else $("brDot").style.opacity=.25;
-  const hrShown = d.hr>0 && d.hr_locked;
+  const hrShown = trustVitals && d.hr>0 && d.hr_locked;
+  $("hrVal").textContent = hrShown ? d.hr : "—";
   if(hrShown){ $("hrDot").style.left=pct(RANGES.hr,d.hr)+"%";
                $("hrDot").style.opacity=1; }
   else $("hrDot").style.opacity=.25;
-  trend("br", d.breath); trend("hr", hrShown ? d.hr : 0);
+  trend("br", brShown ? d.breath : 0); trend("hr", hrShown ? d.hr : 0);
 
   /* The indicator beats at the measured rate - the clearest signal that the
      monitor is genuinely tracking a living person and not just drawing. */
@@ -708,7 +713,7 @@ function render(d){
                beat.style.animationDuration=(60/d.hr).toFixed(2)+"s"; }
   else beat.classList.remove("on");
   $("peopleTxt").textContent = d.people===1?"1 person":(d.people>1?d.people+" people":"");
-  $("hrBadge").textContent = d.hr_locked?"locked":"searching";
+  $("hrBadge").textContent = !trustVitals ? "" : (d.hr_locked?"locked":"searching");
   pushWave("brWave",d.breath_wave);
   pushWave("hrWave",d.heart_wave);
 
