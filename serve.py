@@ -182,6 +182,7 @@ def build_payload():
         motion=bool(r["motion"]), collide=bool(r["collide"]),
         breath=round(r["f_b"] * 60, 1), hr=round(r["f_h"] * 60),
         hr_locked=locked, hr_steady=steady, quality=int(r["quality"]),
+        hr_window=int(r.get("hr_window", 0)),
         people=people, machines=len(r["lines"]),
         rate=round(core.stats["rate"]),
         breath_wave=thin(norm(tail(r["wave_b"], 25))),
