@@ -1338,6 +1338,7 @@ let demoTimer=null;
 function goStandalone(){
   if(standalone) return;
   standalone=true;
+  gotData=false;
   $("sessBtn").title="Recording needs the RadioBeat server";
   logEvent("w","No RadioBeat device found");
   // Demo stays a deliberate choice here too, exactly as it is on the server.
@@ -1354,17 +1355,34 @@ function stopLocalDemo(){
   logEvent("i","Demo mode off");
 }
 
+function leaveStandalone(){
+  if(!standalone) return;
+  standalone=false;
+  if(demoTimer){ clearInterval(demoTimer); demoTimer=null; }
+  settings.demo_mode=false; $("sDemo").classList.remove("on");
+  $("sessBtn").disabled=false; $("sessBtn").style.opacity="";
+  $("sessBtn").title="";
+  ["simN","simA"].forEach(i=>{ $(i).disabled=false; $(i).style.opacity=""; });
+  $("simNeeds").textContent="";
+  logEvent("o","RadioBeat server found - switching to live data");
+}
+
+/* The stream drops whenever the server restarts. Falling back to a local demo
+   is fine, but it must not be a one-way door: keep retrying so the app returns
+   to real data by itself once the server is back. */
 let es, gotData=false, tries=0;
 function connect(){
-  if(standalone) return;
   try{ es=new EventSource("/stream"); }
-  catch(_){ return goStandalone(); }
-  es.onmessage=e=>{ gotData=true; tries=0;
-    try{ render(JSON.parse(e.data)); }catch(_){}; };
+  catch(_){ goStandalone(); setTimeout(connect,4000); return; }
+  es.onmessage=e=>{
+    if(standalone) leaveStandalone();
+    gotData=true; tries=0;
+    try{ render(JSON.parse(e.data)); }catch(_){}
+  };
   es.onerror=()=>{
     es.close();
-    if(!gotData && ++tries>=2) return goStandalone();
-    setTimeout(connect,2500);
+    if(!gotData && ++tries>=2) goStandalone();
+    setTimeout(connect, standalone ? 4000 : 2500);
   };
 }
 /* Normal-range bars. Showing a bare number tells a non-clinical user nothing;
