@@ -220,44 +220,193 @@ details.adv .body{margin-top:12px}
 footer{margin-top:26px;color:var(--faint);font-size:12px;line-height:1.65}
 .disclaimer{border-left:2px solid var(--line);padding-left:14px;max-width:70ch}
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   Sign in — split layout: brand story on the left, form on the right.
+   ══════════════════════════════════════════════════════════════════════ */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:28px;background:
+    radial-gradient(1100px 620px at 12% 8%, rgba(224,17,95,.07), transparent 62%),
+    radial-gradient(900px 520px at 92% 92%, rgba(124,92,255,.07), transparent 60%),
+    var(--bg)}
+.gate-shell{width:100%;max-width:1000px;display:grid;grid-template-columns:1.05fr .95fr;
+  background:var(--card);border:1px solid var(--line);border-radius:30px;
+  overflow:hidden;box-shadow:0 40px 90px -30px rgba(20,20,45,.30),
+    0 6px 18px rgba(20,20,45,.06)}
+@media(max-width:860px){.gate-shell{grid-template-columns:1fr;max-width:460px}}
+
+/* ---- brand panel ---- */
+.gate-brand{position:relative;padding:46px 44px;color:#fff;overflow:hidden;
+  background:linear-gradient(155deg,#e0115f 0%,#c00f57 42%,#7c1a8e 100%);
+  display:flex;flex-direction:column}
+.gb-glow{position:absolute;width:420px;height:420px;right:-140px;top:-160px;
+  border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.20),transparent 65%);
+  pointer-events:none}
+.gate-brand .gate-logo{color:#fff;font-size:19px;margin-bottom:auto;
+  letter-spacing:-.03em;position:relative}
+.gate-brand .gate-logo svg{width:24px;height:24px;stroke:#fff}
+.gb-head{font-size:35px;line-height:1.1;font-weight:700;letter-spacing:-.04em;
+  margin:38px 0 0;position:relative}
+.gb-sub{margin-top:14px;font-size:14.5px;line-height:1.6;color:rgba(255,255,255,.80);
+  max-width:34ch;position:relative}
+.gb-ecg{margin:26px 0 24px;position:relative;height:72px}
+.gb-ecg svg{width:100%;height:100%;overflow:visible}
+.ecg-track{fill:none;stroke:rgba(255,255,255,.22);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.ecg-live{fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;
+  stroke-linejoin:round;filter:drop-shadow(0 0 7px rgba(255,255,255,.75));
+  stroke-dasharray:190 1400;stroke-dashoffset:1400;
+  animation:sweep 3.4s linear infinite}
+@keyframes sweep{to{stroke-dashoffset:-190}}
+.gb-points{list-style:none;margin-top:auto;position:relative;display:grid;gap:11px}
+.gb-points li{display:flex;align-items:center;gap:11px;font-size:13.5px;
+  color:rgba(255,255,255,.90)}
+.gb-tick{width:19px;height:19px;border-radius:50%;flex:none;display:grid;
+  place-items:center;background:rgba(255,255,255,.20);font-size:10px;font-weight:700}
+
+/* ---- form panel ---- */
+.gate-form{padding:46px 44px;display:flex;align-items:center}
+@media(max-width:860px){.gate-brand{padding:34px 30px}
+  .gate-form{padding:34px 30px}.gb-head{font-size:29px}.gb-ecg{height:58px;margin:20px 0 18px}}
+.gf-inner{width:100%}
+.gf-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--rasp);font-weight:700;margin-bottom:9px}
+.gf-title{font-size:30px;font-weight:700;letter-spacing:-.035em;line-height:1.1}
+.gf-sub{color:var(--muted);font-size:14px;margin:9px 0 26px;line-height:1.55}
+
+/* floating-label fields */
+.field{position:relative;margin-bottom:15px}
+.field input{width:100%;background:var(--card2);border:1.5px solid var(--line);
+  border-radius:14px;padding:23px 15px 9px;color:var(--ink);font-size:15px;
+  font-family:inherit;margin:0;transition:border-color .16s,background .16s,box-shadow .16s}
+.field label{position:absolute;left:15px;top:15px;font-size:14px;color:var(--faint);
+  pointer-events:none;transition:.16s cubic-bezier(.22,.61,.36,1);
+  text-transform:none;letter-spacing:0;font-weight:500;margin:0}
+.field input:focus{outline:none;border-color:var(--rasp);background:var(--card);
+  box-shadow:0 0 0 4px var(--rasp-soft)}
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label{top:8px;font-size:10.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--rasp);font-weight:700}
+.btn.ghost{background:var(--card);box-shadow:none;color:var(--muted);font-weight:600}
+.btn.ghost:hover{color:var(--ink);border-color:rgba(0,0,0,.18)}
+.gf-divider{display:flex;align-items:center;gap:14px;margin:22px 0 16px;
+  color:var(--faint);font-size:11.5px}
+.gf-divider::before,.gf-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.gf-note{text-align:center;font-size:11.5px;color:var(--faint);margin-top:10px}
+
+/* ══════════════════════════════════════════════════════════════════════
+   App polish
+   ══════════════════════════════════════════════════════════════════════ */
+.wrap{animation:rise .5s cubic-bezier(.22,.61,.36,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* status card: a soft aura in the current state colour */
+.hero{isolation:isolate}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  opacity:0;transition:opacity .6s;
+  background:radial-gradient(560px 220px at 8% 0%, currentColor, transparent 70%)}
+.hero.ok{color:var(--ok)} .hero.warn{color:var(--warn)} .hero.alert{color:var(--rasp)}
+.hero.ok::after,.hero.warn::after{opacity:.06}
+.hero.alert::after{opacity:.10}
+.hero-state{transition:color .45s}
+
+/* vitals cards lift slightly and gain a hairline accent on top */
+.card.breath,.card.heart{position:relative;overflow:hidden;transition:
+  transform .35s cubic-bezier(.22,.61,.36,1), box-shadow .35s}
+.card.breath::before,.card.heart::before{content:"";position:absolute;
+  top:0;left:0;right:0;height:3px}
+.card.breath::before{background:linear-gradient(90deg,var(--violet),rgba(124,92,255,0))}
+.card.heart::before{background:linear-gradient(90deg,var(--rasp),rgba(224,17,95,0))}
+.card.breath:hover,.card.heart:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+
+/* the big numbers */
+.val{font-feature-settings:"tnum" 1;}
+.unit{opacity:.85}
+
+/* nav underline motion */
+nav button{position:relative}
+
+/* metric cards react rather than just recolour */
+.metric{transition:background .35s, border-color .35s, transform .35s}
+.metric.hot{transform:translateY(-1px)}
+
+/* session log rows fade in */
+.ev{animation:evin .35s ease}
+@keyframes evin{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+
+/* buttons everywhere get a consistent press */
+.btn:focus-visible,nav button:focus-visible,.sw:focus-visible{outline:2px solid var(--rasp);
+  outline-offset:2px}
+
 </style>
 </head>
 <body>
 
 <!-- ══ auth gate ══════════════════════════════════════════════════════════ -->
 <div id="gate">
-  <div class="gate-card">
-    <div class="gate-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="url(#lg)" stroke-width="2.1"
-           stroke-linecap="round" stroke-linejoin="round">
-        <defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24">
-          <stop offset="0" stop-color="#e0115f"/><stop offset=".5" stop-color="#9b1b8f"/>
-          <stop offset="1" stop-color="#7c5cff"/></linearGradient></defs>
-        <path d="M2 12h4l2.5-7 4 14 2.5-7h5"/>
-      </svg>RadioBeat
-    </div>
-    <div class="gate-sub" id="gateSub">Sign in to sync sessions across devices.</div>
-    <div class="err hide" id="gateErr"></div>
-    <div id="gateForm">
-      <label>Email</label>
-      <input type="email" id="gEmail" autocomplete="email" placeholder="you@example.com">
-      <label>Password</label>
-      <input type="password" id="gPass" autocomplete="current-password" placeholder="••••••••">
-      <button class="btn primary wide" id="gGo">Sign in</button>
-      <div class="gate-alt">
-        <span id="gToggleTxt">New here?</span>
-        <span class="link" id="gToggle">Create an account</span>
+  <div class="gate-shell">
+
+    <aside class="gate-brand">
+      <div class="gb-glow"></div>
+      <div class="gate-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12h4l2.5-7 4 14 2.5-7h5"/></svg>
+        RadioBeat
+      </div>
+
+      <h1 class="gb-head">Every heartbeat,<br>without a wire.</h1>
+      <p class="gb-sub">Breathing, pulse and rhythm read from the WiFi already
+        crossing the room. Nothing worn, nothing touched, nothing to remember.</p>
+
+      <div class="gb-ecg">
+        <svg viewBox="0 0 600 90" preserveAspectRatio="none" aria-hidden="true">
+          <path class="ecg-track" d="M0,45 H120 l10,0 6,-26 8,52 7,-26 H250 l10,0 6,-26 8,52 7,-26 H380 l10,0 6,-26 8,52 7,-26 H510 l10,0 6,-26 8,52 7,-26 H600"/>
+          <path class="ecg-live"  d="M0,45 H120 l10,0 6,-26 8,52 7,-26 H250 l10,0 6,-26 8,52 7,-26 H380 l10,0 6,-26 8,52 7,-26 H510 l10,0 6,-26 8,52 7,-26 H600"/>
+        </svg>
+      </div>
+
+      <ul class="gb-points">
+        <li><span class="gb-tick">&#10003;</span>Nothing to wear or charge</li>
+        <li><span class="gb-tick">&#10003;</span>Works in complete darkness</li>
+        <li><span class="gb-tick">&#10003;</span>Watches for irregular rhythm</li>
+      </ul>
+    </aside>
+
+    <div class="gate-form">
+      <div class="gf-inner">
+        <div class="gf-eyebrow" id="gateEyebrow">Welcome back</div>
+        <h2 class="gf-title" id="gateTitle">Sign in</h2>
+        <p class="gf-sub" id="gateSub">Sync your sessions across devices.</p>
+
+        <div class="err hide" id="gateErr"></div>
+
+        <div id="gateForm">
+          <div class="field">
+            <input type="email" id="gEmail" autocomplete="email" placeholder=" ">
+            <label for="gEmail">Email</label>
+          </div>
+          <div class="field">
+            <input type="password" id="gPass" autocomplete="current-password" placeholder=" ">
+            <label for="gPass">Password</label>
+          </div>
+          <button class="btn primary wide" id="gGo">Sign in</button>
+          <div class="gate-alt">
+            <span id="gToggleTxt">New here?</span>
+            <span class="link" id="gToggle">Create an account</span>
+          </div>
+        </div>
+
+        <div class="gf-divider"><span>or</span></div>
+
+        <button class="btn wide ghost" id="gSkip">Continue without an account</button>
+        <div class="gf-note">Everything stays on this computer.</div>
       </div>
     </div>
-    <div class="gate-alt" style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
-      <span class="link" id="gSkip">Continue without an account</span>
-      <div style="color:var(--faint);font-size:11.5px;margin-top:6px">
-        Everything stays on this computer.</div>
-    </div>
+
   </div>
 </div>
 
-<!-- ══ app ════════════════════════════════════════════════════════════════ -->
 <div class="wrap hide" id="app">
   <header>
     <div class="logo">
@@ -540,10 +689,7 @@ if(SB){
   $("gGo").addEventListener("click",doAuth);
   $("gPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doAuth(); });
   $("gToggle").addEventListener("click",()=>{
-    mode = mode==="signin" ? "signup" : "signin";
-    $("gGo").textContent = mode==="signin" ? "Sign in" : "Create account";
-    $("gToggleTxt").textContent = mode==="signin" ? "New here?" : "Already have an account?";
-    $("gToggle").textContent = mode==="signin" ? "Create an account" : "Sign in";
+    mode = mode==="signin" ? "signup" : "signin"; paintMode();
   });
   try{ const s=JSON.parse(localStorage.getItem(LS)||"null");
        if(s&&s.token){ token=s.token; refreshTok=s.refreshTok||null; user=s.user; } }catch(_){}
@@ -559,11 +705,18 @@ if(SB){
   $("gGo").addEventListener("click",demoSignIn);
   $("gPass").addEventListener("keydown",e=>{ if(e.key==="Enter") demoSignIn(); });
   $("gToggle").addEventListener("click",()=>{
-    mode = mode==="signin" ? "signup" : "signin";
-    $("gGo").textContent = mode==="signin" ? "Sign in" : "Create account";
-    $("gToggleTxt").textContent = mode==="signin" ? "New here?" : "Already have an account?";
-    $("gToggle").textContent = mode==="signin" ? "Create an account" : "Sign in";
+    mode = mode==="signin" ? "signup" : "signin"; paintMode();
   });
+}
+
+function paintMode(){
+  const inn = mode==="signin";
+  $("gateEyebrow").textContent = inn ? "Welcome back" : "Get started";
+  $("gateTitle").textContent   = inn ? "Sign in" : "Create your account";
+  $("gGo").textContent         = inn ? "Sign in" : "Create account";
+  $("gToggleTxt").textContent  = inn ? "New here?" : "Already have an account?";
+  $("gToggle").textContent     = inn ? "Create an account" : "Sign in";
+  $("gPass").setAttribute("autocomplete", inn ? "current-password" : "new-password");
 }
 
 function demoSignIn(){
@@ -690,6 +843,29 @@ function logEvent(cls,text){
     '<div class="ev '+e.cls+'"><span class="ev-t">'+e.t+'</span>'+
     '<span class="ev-d"></span><span class="ev-x">'+e.text+'</span></div>').join("");
 }
+/* Vitals tween between readings. A number that snaps looks like a refresh;
+   one that travels looks like a measurement. */
+const tweens={};
+function setNum(id, val, dp){
+  const el=$(id);
+  if(val===null||!isFinite(val)){
+    if(tweens[id]) cancelAnimationFrame(tweens[id]);
+    tweens[id]=null; el.dataset.v=""; el.textContent="—"; return;
+  }
+  const from = el.dataset.v==="" || el.dataset.v===undefined
+             ? val : parseFloat(el.dataset.v);
+  el.dataset.v = val;
+  if(tweens[id]) cancelAnimationFrame(tweens[id]);
+  if(Math.abs(val-from) < (dp?0.05:0.5)){ el.textContent=val.toFixed(dp); return; }
+  const t0=performance.now(), dur=650;
+  (function step(now){
+    const k=Math.min((now-t0)/dur,1);
+    const e=1-Math.pow(1-k,3);                       // ease-out cubic
+    el.textContent=(from+(val-from)*e).toFixed(dp);
+    if(k<1) tweens[id]=requestAnimationFrame(step);
+  })(t0);
+}
+
 function setMetric(id,val,hot,suf){
   const el=$(id); el.querySelector(".metric-v").textContent=(val===null?"—":val+(suf||""));
   el.classList.toggle("hot",!!hot);
@@ -719,7 +895,7 @@ function render(d){
         "is switched on. Monitoring resumes by itself once they reconnect.";
       $("srcTxt").textContent="offline";
       $("srcPill").className="pill demo";
-      ["brVal","hrVal"].forEach(i=>$(i).textContent="—");
+      setNum("brVal",null,1); setNum("hrVal",null,0);
       $("beatDot").classList.remove("on");
       ["brDot","hrDot"].forEach(i=>$(i).style.opacity=.25);
       ["brTrend","hrTrend"].forEach(i=>$(i).style.display="none");
@@ -741,13 +917,13 @@ function render(d){
      "48 BPM" beside "No one detected" is worse than showing a dash. */
   const trustVitals = d.present && !d.motion;
   const brShown = trustVitals && d.breath>0;
-  $("brVal").textContent = brShown ? d.breath.toFixed(1) : "—";
+  setNum("brVal", brShown ? d.breath : null, 1);
 
   if(brShown){ $("brDot").style.left=pct(RANGES.br,d.breath)+"%";
                $("brDot").style.opacity=1; }
   else $("brDot").style.opacity=.25;
   const hrShown = trustVitals && d.hr>0 && d.hr_locked;
-  $("hrVal").textContent = hrShown ? d.hr : "—";
+  setNum("hrVal", hrShown ? d.hr : null, 0);
   if(hrShown){ $("hrDot").style.left=pct(RANGES.hr,d.hr)+"%";
                $("hrDot").style.opacity=1; }
   else $("hrDot").style.opacity=.25;
