@@ -34,7 +34,16 @@ BAUD_TRY    = [921600, 115200, 460800]   # auto-detected at startup
 N_BYTES     = 128             # LLTF: 64 subcarriers x (imag, real)
 N_SUB       = 64
 FS          = 40              # uniform grid after resampling (Hz)
-WIN_SEC     = 30              # analysis window — 30 s => ~2 BPM resolution
+WIN_SEC     = 30              # breathing window — responsive
+WIN_SEC_HR  = 240             # heart window — see note below
+HR_EVERY_S  = 6.0             # how often the slow heart estimate is recomputed
+# Measured against synthetic CSI with known ground truth (benchmark.py): the
+# pipeline resolves chest movement down to about 1 mm. Breathing moves ~5 mm and
+# lands within 0.5 /min. A heartbeat moves ~0.45 mm, and at a 30 s window that
+# is below the floor - the estimate was no better than chance. Error falls with
+# integration time (30 s: 51 BPM, 60 s: 28, 120 s: 24, 240 s: 5.5), so the heart
+# is estimated over a much longer window than breathing. Raising the packet rate
+# does NOT help, because everything is resampled to FS anyway.
 MIN_SEC     = 12              # start showing results after this much data
 NFFT        = 4096            # zero-padded for a fine frequency grid
 
@@ -50,7 +59,7 @@ sos_heart  = butter(4, [F_LO_H, F_HI_H], btype="band", fs=FS, output="sos")
 REORDER = np.r_[32:64, 0:32]
 SC_IDX  = np.arange(-32, 32, dtype=float)
 
-buf  = deque(maxlen=12000)    # (device_time_s, complex[64])
+buf  = deque(maxlen=int(WIN_SEC_HR * 60) + 2000)    # (device_time_s, complex[64])
 lock = threading.Lock()
 stats = {"pkts": 0, "rate": 0.0, "bad": 0, "baud": 0, "last_pkt": 0.0}
 
@@ -596,6 +605,8 @@ lines_auto = LineTracker()
 rhythm_gate = RhythmGate()
 sim_mode = {"kind": None}   # None | 'normal' | 'afib'  (clearly labelled demo)
 wander_b, wander_h = Wander(), Wander()
+_hr_slow = {"f": 0.0, "conf": 0.0, "t": 0.0, "n": 0}
+
 hr_track = Tracker(tol=0.12, patience=6)
 br_track = Tracker(tol=0.04, patience=4)
 hr_history = deque(maxlen=400)
@@ -608,6 +619,51 @@ try:
 except Exception:
     logfile, logger = None, None
 t0 = time.monotonic()
+
+
+def _heart_long(t, Z, valid, f_b, sel_b_cols=None):
+    """Heart rate from a multi-minute window.
+
+    Only amplitude and clutter-projection features are used and only the most
+    responsive columns are transformed, because this window is minutes long and
+    the full feature set would be far too slow to run at the display rate."""
+    if len(t) < MIN_SEC * 8 or t[-1] < 60:
+        return 0.0, 0.0, 0
+    amp = np.abs(Z)
+    amp_n = amp / (np.linalg.norm(amp, axis=1, keepdims=True) + 1e-9)
+    ph = np.unwrap(np.angle(Z), axis=1)
+    phc = ph - ph.mean(axis=1, keepdims=True)
+    x = SC_IDX - SC_IDX.mean()
+    phs = phc - ((phc * x).sum(axis=1, keepdims=True) / (x @ x)) * x
+    Zs = amp_n * np.exp(1j * phs)
+    cl = Zs.mean(axis=0, keepdims=True)
+    D = Zs - cl
+    proj = np.real(D * np.conj(cl / (np.abs(cl) + 1e-12)))
+    X = np.hstack([amp_n[:, valid], proj[:, valid]])
+    X = (X - X.mean(axis=0)) / (X.std(axis=0) + 1e-9)
+
+    dur = t[-1]
+    m = int(dur * FS)
+    tu = np.arange(m) / FS
+    R = np.empty((m, X.shape[1]))
+    for k in range(X.shape[1]):
+        R[:, k] = np.interp(tu, t, X[:, k])
+    R = remove_periodics(R, tu, [f_b], n_harm=10)
+
+    nfft = 1 << int(np.ceil(np.log2(max(m * 2, NFFT))))
+    w = np.hanning(m)[:, None]
+    S = np.abs(np.fft.rfft((R - R.mean(axis=0)) * w, n=nfft, axis=0))
+    f = np.fft.rfftfreq(nfft, 1.0 / FS)
+    band = (f >= F_LO_H) & (f <= F_HI_H)
+    snr = S[band].max(axis=0) / (np.median(S[band], axis=0) + 1e-12)
+    sel = np.argsort(snr)[::-1][:max(6, int(0.30 * len(snr)))]
+    Sa = S[:, sel].mean(axis=1)
+    cand, sc = harmonic_score(f, Sa, F_LO_H, F_HI_H)
+    if not len(cand):
+        return 0.0, 0.0, 0
+    f0 = float(cand[int(np.argmax(sc))])
+    conf = float(Sa[band].max() / (np.median(Sa[band]) + 1e-12))
+    return f0, conf, int(dur)
 
 
 # ── main analysis ─────────────────────────────────────────────────────────────
@@ -729,7 +785,25 @@ def analyze():
     motion = hi_band.any() and in_band.any() and \
         Sm[hi_band].mean() > 1.8 * Sm[in_band].mean()
 
-    # ── heartbeat ────────────────────────────────────────────────────────────
+    # ── heartbeat, on a much longer window ───────────────────────────────────
+    # Recomputed every few seconds rather than every frame: it spans minutes,
+    # so there is nothing to gain from redoing it at the display rate.
+    if time.monotonic() - _hr_slow["t"] >= HR_EVERY_S:
+        _hr_slow["t"] = time.monotonic()
+        with lock:
+            snap_l = list(buf)
+        tl = np.array([x[0] for x in snap_l])
+        tl = tl - tl[0]
+        keepl = tl >= (tl[-1] - WIN_SEC_HR)
+        if keepl.sum() > MIN_SEC * 8:
+            Zl = np.array([x[1] for x in snap_l])[keepl]
+            tl = tl[keepl] - tl[keepl][0]
+            f_slow, c_slow, nsec = _heart_long(tl, Zl, valid,
+                                               br_track.f if br_track.f > 0 else f_b,
+                                               sel_b_cols=None)
+            if f_slow > 0:
+                _hr_slow.update(f=f_slow, conf=c_slow, n=nsec)
+
     Rc = remove_periodics(R, tu, [br_track.f if br_track.f > 0 else f_b])
     fh_ax, Sh = spectra(Rc)
     band_h = (fh_ax >= F_LO_H) & (fh_ax <= F_HI_H)
@@ -756,6 +830,11 @@ def analyze():
             halves.append(peak_of(fh2, s2, F_LO_H, F_HI_H)[0])
     consistent = (len(halves) == 2 and f_fft > 0 and
                   all(abs(h - f_fft) / max(f_fft, 1e-9) < 0.15 for h in halves))
+
+    # The long window is the trustworthy one; the short estimates only confirm it.
+    if _hr_slow["f"] > 0 and _hr_slow["n"] >= 90:
+        f_fft = _hr_slow["f"]
+        conf_h = max(conf_h, _hr_slow["conf"])
 
     agree = f_fft > 0 and f_ac > 0 and abs(f_fft - f_ac) / max(f_fft, 1e-9) < 0.12
     if agree and consistent:
@@ -821,6 +900,7 @@ def analyze():
                 motion=motion, conf_h=conf_h, f_fft=f_fft, f_ac=f_ac,
                 f_b=br_track.value(), dur=dur, mech_h=mech_h, mech_b=mech_b,
                 wander_h=wander_h.rel(), lines=mech_lines, collide=collide,
+                hr_window=_hr_slow["n"],
                 beats=beats, hrv=hrv, rhythm=rhythm,
                 nsel=len(sel_h), consistent=consistent)
 
