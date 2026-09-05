@@ -269,6 +269,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def handle_one_request(self):
+        """A browser closing a tab aborts the connection mid-read. That is
+        normal, not an error, and must never be allowed to take the server
+        down - this is meant to run unattended overnight."""
+        try:
+            super().handle_one_request()
+        except (ConnectionAbortedError, ConnectionResetError,
+                BrokenPipeError, TimeoutError):
+            self.close_connection = True
+
     def _json(self, obj, code=200):
         body = json.dumps(obj).encode()
         self.send_response(code)
@@ -386,6 +396,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 class Server(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        """Log real faults, stay quiet about clients hanging up."""
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionAbortedError, ConnectionResetError,
+                            BrokenPipeError, TimeoutError)):
+            return
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
