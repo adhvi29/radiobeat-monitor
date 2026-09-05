@@ -270,6 +270,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def end_headers(self):
+        """Never let a browser hold on to an old copy of the app. A stale page
+        keeps its old JavaScript, which is how a fixed bug appears unfixed."""
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
     def handle_one_request(self):
         """A browser closing a tab aborts the connection mid-read. That is
         normal, not an error, and must never be allowed to take the server

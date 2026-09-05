@@ -1372,10 +1372,30 @@ function demoTick(){
   });
 }
 let demoTimer=null;
+let probeTimer=null;
+function probeForServer(){
+  if(probeTimer) return;
+  /* Actively look for the server rather than waiting on the stream to recover.
+     An SSE reconnect can be slow or silently wedged; a plain fetch is not. */
+  probeTimer=setInterval(async()=>{
+    if(!standalone){ clearInterval(probeTimer); probeTimer=null; return; }
+    try{
+      const r=await fetch("/api/state",{cache:"no-store"});
+      if(r.ok){
+        clearInterval(probeTimer); probeTimer=null;
+        leaveStandalone();
+        try{ es && es.close(); }catch(_){}
+        gotData=false; tries=0; connect();
+      }
+    }catch(_){}
+  },3000);
+}
+
 function goStandalone(){
   if(standalone) return;
   standalone=true;
   gotData=false;
+  probeForServer();
   $("sessBtn").title="Recording needs the RadioBeat server";
   logEvent("w","No RadioBeat device found");
   // Demo stays a deliberate choice here too, exactly as it is on the server.
