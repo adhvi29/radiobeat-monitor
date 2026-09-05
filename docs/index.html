@@ -338,6 +338,53 @@ nav button{position:relative}
 .btn:focus-visible,nav button:focus-visible,.sw:focus-visible{outline:2px solid var(--rasp);
   outline-offset:2px}
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   Account menu
+   ══════════════════════════════════════════════════════════════════════ */
+.acct{position:relative;flex:none}
+.avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);
+  background:linear-gradient(150deg,var(--rasp),#7c1a8e);color:#fff;
+  font-size:13px;font-weight:700;letter-spacing:.01em;display:grid;place-items:center;
+  cursor:pointer;box-shadow:var(--sh);transition:.16s;padding:0}
+.avatar:hover{transform:translateY(-1px);box-shadow:var(--sh-lg)}
+.avatar.guest{background:var(--card2);color:var(--muted);border-color:var(--line)}
+.acct-menu{position:absolute;right:0;top:46px;width:250px;background:var(--card);
+  border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh-lg);
+  padding:8px;z-index:50;opacity:0;transform:translateY(-6px) scale(.98);
+  pointer-events:none;transition:.16s cubic-bezier(.22,.61,.36,1)}
+.acct-menu.open{opacity:1;transform:none;pointer-events:auto}
+.am-head{padding:12px 12px 13px;border-bottom:1px solid var(--line2);margin-bottom:6px}
+.am-name{font-weight:600;font-size:14px;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.am-sub{font-size:11.5px;color:var(--faint);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.am-item{display:flex;align-items:center;gap:10px;width:100%;background:none;
+  border:none;text-align:left;padding:10px 12px;border-radius:11px;font-size:13.5px;
+  font-weight:500;color:var(--ink);transition:.14s}
+.am-item:hover{background:var(--card2)}
+.am-item.danger{color:var(--rasp)}
+.am-item svg{width:15px;height:15px;flex:none;opacity:.75}
+
+/* ---------- modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(20,20,35,.34);
+  backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px;z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.open{opacity:1;pointer-events:auto}
+.modal{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:30px 30px 26px;box-shadow:0 40px 90px -28px rgba(20,20,45,.45);
+  transform:translateY(8px) scale(.98);transition:.22s cubic-bezier(.22,.61,.36,1)}
+.modal-bg.open .modal{transform:none}
+.modal h3{font-size:21px;font-weight:700;letter-spacing:-.03em}
+.modal .msub{color:var(--muted);font-size:13.5px;margin:8px 0 22px;line-height:1.55}
+.modal-row{display:flex;gap:10px;margin-top:6px}
+.modal-row .btn{flex:1}
+.ok-note{background:var(--ok-soft);border:1px solid rgba(18,163,122,.28);
+  color:#0b7a5b;border-radius:12px;padding:11px 13px;font-size:13px;margin-bottom:15px}
+
+/* disconnected call-to-action inside the status card */
+.hero-cta{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -420,7 +467,28 @@ nav button{position:relative}
     </div>
     <div class="spacer"></div>
     <span class="pill" id="srcPill"><span class="dot"></span><span id="srcTxt">connecting</span></span>
-    <span class="pill" id="whoPill">local</span>
+    <div class="acct">
+      <button class="avatar guest" id="avatarBtn" aria-haspopup="true"
+              aria-expanded="false" title="Account">&#183;&#183;</button>
+      <div class="acct-menu" id="acctMenu" role="menu">
+        <div class="am-head">
+          <div class="am-name" id="amName">Not signed in</div>
+          <div class="am-sub" id="amSub">Everything stays on this computer</div>
+        </div>
+        <button class="am-item" id="amPassword" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Change password</button>
+        <button class="am-item" id="amSettings" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round"><circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7.5"/></svg>Settings</button>
+        <button class="am-item danger" id="amSignOut" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <path d="M16 17l5-5-5-5M21 12H9"/></svg><span id="amSignOutTxt">Sign in</span></button>
+      </div>
+    </div>
   </header>
 
   <nav>
@@ -437,6 +505,10 @@ nav button{position:relative}
           <div class="hero-label">Rhythm status</div>
           <div class="hero-state" id="heroState">Connecting…</div>
           <div class="hero-sub" id="heroSub">Waiting for the monitor to come online.</div>
+          <div class="hero-cta hide" id="heroCta">
+            <button class="btn primary sm" id="ctaDemo">Enable demo mode</button>
+            <button class="btn sm" id="ctaHelp">How to connect</button>
+          </div>
         </div>
         <div class="hero-side">
           <button class="btn" id="sessBtn">Start session</button>
@@ -550,6 +622,13 @@ nav button{position:relative}
         <div class="sw" id="sAbsent"></div>
       </div>
       <div class="set-row">
+        <div><div class="set-k">Demo mode</div>
+          <div class="set-d">Show simulated vitals when no sensors are attached.
+            Off by default: a monitor should never invent readings on its own.
+            Demo readings are never saved into a session.</div></div>
+        <div class="sw" id="sDemo"></div>
+      </div>
+      <div class="set-row">
         <div><div class="set-k">Save a reading every</div>
           <div class="set-d">How often measurements are written to the session.</div></div>
         <div class="set-c"><select id="sEvery">
@@ -602,6 +681,30 @@ nav button{position:relative}
       </div>
     </footer>
   </section>
+</div>
+
+<div class="modal-bg" id="pwBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <h3 id="pwTitle">Change password</h3>
+    <p class="msub" id="pwSub">Choose a new password for your account. You will
+      stay signed in on this device.</p>
+    <div class="err hide" id="pwErr"></div>
+    <div class="ok-note hide" id="pwOk"></div>
+    <div id="pwFields">
+      <div class="field">
+        <input type="password" id="pwNew" autocomplete="new-password" placeholder=" ">
+        <label for="pwNew">New password</label>
+      </div>
+      <div class="field">
+        <input type="password" id="pwNew2" autocomplete="new-password" placeholder=" ">
+        <label for="pwNew2">Confirm new password</label>
+      </div>
+    </div>
+    <div class="modal-row">
+      <button class="btn" id="pwCancel">Cancel</button>
+      <button class="btn primary" id="pwSave">Update password</button>
+    </div>
+  </div>
 </div>
 
 <script src="supabase-config.js"></script>
@@ -657,7 +760,7 @@ async function sbFetch(path, opts, retried){
 function showErr(m){ const e=$("gateErr"); e.textContent=m; e.classList.remove("hide"); }
 function enterApp(){
   $("gate").classList.add("hide"); $("app").classList.remove("hide");
-  $("whoPill").textContent = user ? user.email : "local mode";
+  paintAccount();
   if(user && user.demo){
     $("acctK").textContent="Demo account";
     $("acctD").textContent=user.email+" — a demonstration sign-in. Nothing is "+
@@ -734,13 +837,7 @@ if(token) enterApp();
 
 /* ══ nav ══ */
 document.querySelectorAll("nav button").forEach(b=>{
-  b.addEventListener("click",()=>{
-    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on");
-    ["live","history","settings"].forEach(v=>
-      $("v-"+v).classList.toggle("hide", v!==b.dataset.v));
-    if(b.dataset.v==="history") loadSessions();
-  });
+  b.addEventListener("click",()=>gotoView(b.dataset.v));
 });
 
 /* ══ canvas ══ */
@@ -885,6 +982,27 @@ function render(d){
       : "Saves tonight's readings";
   }
   if(!d.ok){
+    if(d.disconnected){
+      $("hero").className="hero warn";
+      $("heroState").textContent="Device not connected";
+      $("heroSub").textContent="No RadioBeat sensors were found. Check the "+
+        "transmitter is powered and the receiver is plugged in over USB. "+
+        "To explore the app without hardware, enable demo mode from Settings.";
+      $("heroCta").classList.remove("hide");
+      $("srcTxt").textContent="no device"; $("srcPill").className="pill demo";
+      setNum("brVal",null,1); setNum("hrVal",null,0);
+      $("hrBadge").textContent=""; $("peopleTxt").textContent="";
+      $("beatDot").classList.remove("on");
+      ["brDot","hrDot"].forEach(i=>$(i).style.opacity=.25);
+      ["brTrend","hrTrend"].forEach(i=>$(i).style.display="none");
+      pushWave("brWave",null); pushWave("hrWave",null);
+      drawPoincare(null,false);
+      ["mRmssd","mPnn","mCv","mEnt"].forEach(i=>setMetric(i,null,false));
+      if(lastKey!=="disconnected"){ lastKey="disconnected";
+        logEvent("w","Device not connected"); }
+      return;
+    }
+    $("heroCta").classList.add("hide");
     if(d.offline){
       /* The sensors stopped sending. Show nothing rather than the last
          reading, which would look live and could be badly misleading. */
@@ -915,6 +1033,7 @@ function render(d){
   /* If nobody is in range the numbers are just noise fitted to an empty room,
      so show nothing rather than a plausible-looking vital sign. Displaying
      "48 BPM" beside "No one detected" is worse than showing a dash. */
+  $("heroCta").classList.add("hide");
   const trustVitals = d.present && !d.motion;
   const brShown = trustVitals && d.breath>0;
   setNum("brVal", brShown ? d.breath : null, 1);
@@ -1093,6 +1212,7 @@ function applySettings(s){
   settings=s;
   $("sPerson").value=s.person||"";
   $("sAfib").classList.toggle("on",!!s.alert_afib);
+  $("sDemo").classList.toggle("on",!!s.demo_mode);
   $("sAbsent").classList.toggle("on",!!s.alert_absent);
   $("sEvery").value=String(s.record_every_s||5);
 }
@@ -1105,6 +1225,7 @@ async function saveSettings(patch){
 $("sPerson").addEventListener("change",e=>saveSettings({person:e.target.value}));
 $("sEvery").addEventListener("change",e=>saveSettings({record_every_s:+e.target.value}));
 $("sAfib").addEventListener("click",()=>saveSettings({alert_afib:!settings.alert_afib}));
+$("sDemo").addEventListener("click",()=>saveSettings({demo_mode:!settings.demo_mode}));
 $("sAbsent").addEventListener("click",()=>saveSettings({alert_absent:!settings.alert_absent}));
 function setSim(kind){
   sim=(sim===kind)?null:kind;
@@ -1218,6 +1339,103 @@ let _rz;
 window.addEventListener("resize",()=>{
   clearTimeout(_rz);
   _rz=setTimeout(()=>{ if(_lastPayload) _origRender(_lastPayload); },150);
+});
+
+/* ══ account menu ══ */
+function initials(u){
+  if(!u) return "··";
+  const n = (u.user_metadata && u.user_metadata.display_name) || u.email || "";
+  const base = n.split("@")[0].replace(/[._-]+/g," ").trim();
+  const parts = base.split(/\s+/).filter(Boolean);
+  if(!parts.length) return "··";
+  return (parts.length>1 ? parts[0][0]+parts[1][0] : parts[0].slice(0,2)).toUpperCase();
+}
+function paintAccount(){
+  const av=$("avatarBtn");
+  if(user){
+    av.textContent=initials(user);
+    av.classList.remove("guest");
+    $("amName").textContent=(user.user_metadata&&user.user_metadata.display_name)
+                            || (user.email||"").split("@")[0];
+    $("amSub").textContent = user.demo ? "Demo account — nothing is stored"
+                                       : (user.email||"");
+    $("amSignOutTxt").textContent="Sign out";
+    $("amPassword").style.display = (SB && !user.demo) ? "" : "none";
+  } else {
+    av.textContent="··";
+    av.classList.add("guest");
+    $("amName").textContent="Not signed in";
+    $("amSub").textContent="Everything stays on this computer";
+    $("amSignOutTxt").textContent="Sign in";
+    $("amPassword").style.display="none";
+  }
+}
+function closeMenu(){ $("acctMenu").classList.remove("open");
+  $("avatarBtn").setAttribute("aria-expanded","false"); }
+$("avatarBtn").addEventListener("click",e=>{
+  e.stopPropagation();
+  const open=$("acctMenu").classList.toggle("open");
+  $("avatarBtn").setAttribute("aria-expanded", open?"true":"false");
+});
+document.addEventListener("click",closeMenu);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeMenu(); closePw(); }});
+$("acctMenu").addEventListener("click",e=>e.stopPropagation());
+$("amSettings").addEventListener("click",()=>{ closeMenu(); gotoView("settings"); });
+$("amSignOut").addEventListener("click",()=>{
+  try{ localStorage.removeItem(LS); }catch(_){}
+  location.reload();
+});
+
+/* ══ change password ══ */
+function openPw(){
+  ["pwErr","pwOk"].forEach(i=>$(i).classList.add("hide"));
+  $("pwFields").classList.remove("hide");
+  $("pwSave").style.display=""; $("pwNew").value=""; $("pwNew2").value="";
+  $("pwBg").classList.add("open");
+  setTimeout(()=>$("pwNew").focus(),80);
+}
+function closePw(){ $("pwBg").classList.remove("open"); }
+$("amPassword").addEventListener("click",()=>{ closeMenu(); openPw(); });
+$("pwCancel").addEventListener("click",closePw);
+$("pwBg").addEventListener("click",e=>{ if(e.target===$("pwBg")) closePw(); });
+$("pwSave").addEventListener("click",async()=>{
+  const a=$("pwNew").value, b=$("pwNew2").value;
+  const err=m=>{ $("pwErr").textContent=m; $("pwErr").classList.remove("hide"); };
+  $("pwErr").classList.add("hide");
+  if(a.length<6) return err("Use at least 6 characters.");
+  if(a!==b)      return err("The two passwords do not match.");
+  $("pwSave").disabled=true; $("pwSave").textContent="Updating…";
+  try{
+    await sbFetch("/auth/v1/user",{method:"PUT",body:JSON.stringify({password:a})});
+    $("pwFields").classList.add("hide");
+    $("pwSave").style.display="none";
+    $("pwOk").textContent="Password updated. Use it next time you sign in.";
+    $("pwOk").classList.remove("hide");
+    $("pwCancel").textContent="Done";
+    logEvent("o","Password changed");
+  }catch(e){ err(e.message||"Could not update the password."); }
+  finally{ $("pwSave").disabled=false; $("pwSave").textContent="Update password"; }
+});
+
+/* ══ navigation helper ══ */
+function gotoView(v){
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.v===v);
+  });
+  ["live","history","settings"].forEach(x=>
+    $("v-"+x).classList.toggle("hide", x!==v));
+  if(v==="history") loadSessions();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ══ disconnected call-to-action ══ */
+$("ctaDemo").addEventListener("click",async()=>{
+  await saveSettings({demo_mode:true});
+  logEvent("w","Demo mode on — these are simulated vitals, not a real person");
+});
+$("ctaHelp").addEventListener("click",()=>{
+  gotoView("settings");
+  logEvent("i","Connect the transmitter, plug the receiver in over USB, then restart the server");
 });
 
 async function boot(){

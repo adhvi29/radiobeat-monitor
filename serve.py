@@ -20,6 +20,7 @@ from urllib.parse import urlparse, parse_qs
 import numpy as np
 
 PORT = 8770
+STALE_AFTER_S = 6.0   # no packet for this long => sensor offline
 HERE = Path(__file__).parent
 WWW = HERE / "docs"
 DB = HERE / "radiobeat.db"
@@ -36,6 +37,7 @@ DEFAULT_SETTINGS = {
     "alert_afib": True,
     "alert_absent": False,
     "record_every_s": 5,
+    "demo_mode": False,
 }
 
 
@@ -103,9 +105,22 @@ def norm(a):
     return a / m if m > 0 else a
 
 
+def tail(a, seconds, fs=40):
+    """Last N seconds of a trace.
+
+    The analysis window is 30 s, but drawing all of it makes a ~70 BPM pulse
+    about 35 cycles wide - an unreadable scribble. Breathing is slow enough to
+    show in full; the heartbeat needs a much shorter window to look like a
+    heartbeat."""
+    a = np.asarray(a, dtype=float)
+    n = int(seconds * fs)
+    return a[-n:] if a.size > n else a
+
+
 def demo_payload(t):
     n = 400
-    tt = np.linspace(0, 20, n)
+    tb = np.linspace(0, 25, n)          # 25 s of breathing
+    th = np.linspace(0, 8, n)           # 8 s of heartbeat
     br = 14.5 + 0.6 * np.sin(t / 7)
     hr = 68 + 3 * np.sin(t / 11)
     afib = (int(t) // 50) % 3 == 2
@@ -114,9 +129,9 @@ def demo_payload(t):
         ok=True, demo=True, present=True, motion=False, collide=False,
         breath=round(float(br), 1), hr=round(float(hr)), hr_locked=True,
         quality=3, people=1, machines=0, rate=0,
-        breath_wave=thin(np.sin(2 * np.pi * br / 60 * tt)),
-        heart_wave=thin(np.sin(2 * np.pi * hr / 60 * tt)
-                        + 0.25 * np.sin(4 * np.pi * hr / 60 * tt)),
+        breath_wave=thin(np.sin(2 * np.pi * br / 60 * tb)),
+        heart_wave=thin(np.sin(2 * np.pi * hr / 60 * th)
+                        + 0.25 * np.sin(4 * np.pi * hr / 60 * th)),
         rr=thin(m["rr"] * 1000, 120) if m else [],
         rhythm="IRREGULAR - AFib-like" if afib else "regular rhythm",
         rhythm_trust=True, rhythm_score=4 if afib else 1, sustained=afib,
@@ -143,8 +158,8 @@ def build_payload():
         hr_locked=bool(r["locked"]), quality=int(r["quality"]),
         people=len(r["people"]), machines=len(r["lines"]),
         rate=round(core.stats["rate"]),
-        breath_wave=thin(norm(r["wave_b"])),
-        heart_wave=thin(norm(r["wave_h"])),
+        breath_wave=thin(norm(tail(r["wave_b"], 25))),
+        heart_wave=thin(norm(tail(r["wave_h"], 8))),
         rr=thin(hrv["rr"] * 1000, 120) if hrv else [],
         rhythm=rh["state"], rhythm_trust=bool(rh["trust"]),
         rhythm_score=int(rh["score"]), sustained=bool(rh.get("sustained")),
@@ -158,8 +173,8 @@ def build_payload():
 def record(p):
     """Persist a reading and raise alerts while a session is running."""
     sid = _state["session"]
-    if not sid or not p.get("ok"):
-        return
+    if not sid or not p.get("ok") or p.get("demo"):
+        return          # never write simulated vitals into a saved session
     with db() as c:
         c.execute("INSERT INTO readings(session_id,ts,breath,hr,quality,present,"
                   "motion,rhythm,score,rmssd,cv,pnn50,entropy) "
@@ -187,8 +202,25 @@ def worker():
     last_rec = 0.0
     while True:
         try:
-            p = (build_payload() if core.stats["pkts"] > 0
-                 else demo_payload(time.time() - t0))
+            # Four states, never conflated. Demo is an explicit choice in
+            # settings, never a silent fallback: a monitor that quietly
+            # invents vitals when its sensors are missing is dangerous.
+            st = get_settings()
+            silent = time.monotonic() - core.stats["last_pkt"]
+            if st.get("demo_mode"):
+                p = demo_payload(time.time() - t0)
+            elif core.stats["pkts"] == 0:
+                p = dict(ok=False, demo=False, disconnected=True,
+                         reason="device not connected",
+                         rate=0, pkts=0, ts=time.time())
+            elif silent > STALE_AFTER_S:
+                # analyze() windows off the newest BUFFERED packet, so without
+                # this it would serve the last 30 s forever, looking live.
+                p = dict(ok=False, demo=False, offline=True,
+                         reason="sensor offline - no data for %.0f s" % silent,
+                         rate=0, pkts=core.stats["pkts"], ts=time.time())
+            else:
+                p = build_payload()
             _state["payload"] = p
             every = get_settings().get("record_every_s", 5)
             if time.time() - last_rec >= every:
