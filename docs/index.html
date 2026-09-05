@@ -1133,6 +1133,10 @@ async function syncSession(id){
 }
 
 $("sessBtn").addEventListener("click",async()=>{
+  if(standalone){
+    logEvent("w","Recording is unavailable here - it needs the RadioBeat server");
+    return;
+  }
   const stopping = !!sessionId, id = sessionId;
   const url  = stopping ? "/api/session/stop" : "/api/session/start";
   const body = stopping ? {} : {person:settings.person};
@@ -1225,7 +1229,12 @@ async function saveSettings(patch){
 $("sPerson").addEventListener("change",e=>saveSettings({person:e.target.value}));
 $("sEvery").addEventListener("change",e=>saveSettings({record_every_s:+e.target.value}));
 $("sAfib").addEventListener("click",()=>saveSettings({alert_afib:!settings.alert_afib}));
-$("sDemo").addEventListener("click",()=>saveSettings({demo_mode:!settings.demo_mode}));
+$("sDemo").addEventListener("click",()=>{
+  const next=!settings.demo_mode;
+  if(standalone){ settings.demo_mode=next; $("sDemo").classList.toggle("on",next);
+                  next ? startLocalDemo() : stopLocalDemo(); return; }
+  saveSettings({demo_mode:next});
+});
 $("sAbsent").addEventListener("click",()=>saveSettings({alert_absent:!settings.alert_absent}));
 function setSim(kind){
   sim=(sim===kind)?null:kind;
@@ -1279,14 +1288,27 @@ function demoTick(){
     entropy:afib?0.93:0.71, sim:null, session:null, ts:Date.now()/1000
   });
 }
+let demoTimer=null;
 function goStandalone(){
   if(standalone) return;
   standalone=true;
   $("sessBtn").disabled=true;
   $("sessBtn").style.opacity=".45";
+  $("sessBtn").title="Recording needs the RadioBeat server";
   $("sessTxt").textContent="Recording needs the RadioBeat server running on a computer with the sensors attached.";
-  logEvent("w","No sensor server found - showing a self-contained demo");
-  setInterval(demoTick,1000); demoTick();
+  logEvent("w","No RadioBeat device found");
+  // Demo stays a deliberate choice here too, exactly as it is on the server.
+  render({ok:false, disconnected:true, reason:"device not connected"});
+}
+function startLocalDemo(){
+  if(demoTimer) return;
+  demoTimer=setInterval(demoTick,1000); demoTick();
+  logEvent("w","Demo mode on - simulated vitals, not a real person");
+}
+function stopLocalDemo(){
+  if(demoTimer){ clearInterval(demoTimer); demoTimer=null; }
+  render({ok:false, disconnected:true, reason:"device not connected"});
+  logEvent("i","Demo mode off");
 }
 
 let es, gotData=false, tries=0;
@@ -1430,6 +1452,8 @@ function gotoView(v){
 
 /* ══ disconnected call-to-action ══ */
 $("ctaDemo").addEventListener("click",async()=>{
+  if(standalone){ settings.demo_mode=true; $("sDemo").classList.add("on");
+                  startLocalDemo(); return; }
   await saveSettings({demo_mode:true});
   logEvent("w","Demo mode on — these are simulated vitals, not a real person");
 });
