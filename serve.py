@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 import numpy as np
+from collections import deque
 
 PORT = 8770
 STALE_AFTER_S = 6.0   # no packet for this long => sensor offline
@@ -30,6 +31,16 @@ if str(HERE) not in sys.path:
 import radiobeat_core as core            # noqa: E402
 
 _state = {"payload": None, "session": None, "last_alert": ""}
+
+# The estimators legitimately lose and regain lock from window to window. Sent
+# straight through, that made the whole card blank and restore about once a
+# second - the reading looked like it was flickering rather than settling. These
+# hold the display steady through brief dropouts without inventing anything: the
+# value shown is always the last real measurement.
+_lock_hist = deque(maxlen=8)
+_people_hist = deque(maxlen=8)
+_present_hist = deque(maxlen=6)
+_hr_hist = deque(maxlen=10)
 _lock = threading.Lock()
 
 DEFAULT_SETTINGS = {
@@ -150,13 +161,28 @@ def build_payload():
                     rate=round(core.stats["rate"]), pkts=core.stats["pkts"],
                     ts=time.time())
     hrv, rh = r["hrv"], r["rhythm"]
+
+    _lock_hist.append(bool(r["locked"]))
+    _people_hist.append(len(r["people"]))
+    _present_hist.append(bool(r["people"]) or r["quality"] >= 1)
+    # "Locked" has to mean the rate is actually holding still. The tracker will
+    # happily follow noise from 51 to 137 BPM and still call itself locked, and
+    # smoothing that only makes bad data look trustworthy. A real pulse does not
+    # move more than a few BPM between windows.
+    _hr_hist.append(r["f_h"] * 60.0)
+    recent = [v for v in _hr_hist if v > 0]
+    steady = len(recent) >= 5 and float(np.std(recent[-6:])) < 8.0
+    locked = any(list(_lock_hist)[-5:]) and steady
+    present = sum(_present_hist) >= max(2, len(_present_hist) // 2)
+    people = max(set(_people_hist), key=list(_people_hist).count)
+
     return dict(
         ok=True, demo=False,
-        present=bool(r["people"]) or r["quality"] >= 1,
+        present=present,
         motion=bool(r["motion"]), collide=bool(r["collide"]),
         breath=round(r["f_b"] * 60, 1), hr=round(r["f_h"] * 60),
-        hr_locked=bool(r["locked"]), quality=int(r["quality"]),
-        people=len(r["people"]), machines=len(r["lines"]),
+        hr_locked=locked, hr_steady=steady, quality=int(r["quality"]),
+        people=people, machines=len(r["lines"]),
         rate=round(core.stats["rate"]),
         breath_wave=thin(norm(tail(r["wave_b"], 25))),
         heart_wave=thin(norm(tail(r["wave_h"], 8))),
@@ -221,6 +247,9 @@ def worker():
                          rate=0, pkts=core.stats["pkts"], ts=time.time())
             else:
                 p = build_payload()
+            if not p.get("ok"):
+                for h in (_lock_hist, _people_hist, _present_hist, _hr_hist):
+                    h.clear()
             _state["payload"] = p
             every = get_settings().get("record_every_s", 5)
             if time.time() - last_rec >= every:
