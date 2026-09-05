@@ -1018,12 +1018,25 @@ function render(d){
   if(!d.ok){
     if(d.disconnected){
       $("hero").className="hero warn";
-      $("heroState").textContent="Device not connected";
-      $("heroSub").textContent="No RadioBeat sensors were found. Check the "+
-        "transmitter is powered and the receiver is plugged in over USB. "+
-        "To explore the app without hardware, enable demo mode from Settings.";
+      if(standalone){
+        /* No server at all: this is the published demo, opened from the web.
+           Nothing is broken - there was never any hardware to find. */
+        $("heroState").textContent="Demo site — no sensors here";
+        $("heroSub").innerHTML="You are viewing the published version of "+
+          "RadioBeat, which has no sensors attached. Turn on demo mode to "+
+          "explore the interface, or run the monitor on a computer with the "+
+          "two boards connected to see real measurements. "+
+          '<a href="https://github.com/adhvi29/radiobeat-monitor" target="_blank" '+
+          'rel="noopener" style="color:var(--rasp);font-weight:600">How to run it &rarr;</a>';
+      } else {
+        $("heroState").textContent="Device not connected";
+        $("heroSub").textContent="The RadioBeat server is running but found no "+
+          "sensors. Check the transmitter is powered and the receiver is "+
+          "plugged in over USB. To explore without hardware, enable demo mode.";
+      }
       $("heroCta").classList.remove("hide");
-      $("srcTxt").textContent="no device"; $("srcPill").className="pill demo";
+      $("srcTxt").textContent = standalone ? "demo site" : "no device";
+      $("srcPill").className="pill demo";
       setNum("brVal",null,1); setNum("hrVal",null,0);
       $("hrBadge").textContent=""; $("peopleTxt").textContent="";
       $("hrNote").innerHTML="";
@@ -1397,7 +1410,8 @@ function goStandalone(){
   gotData=false;
   probeForServer();
   $("sessBtn").title="Recording needs the RadioBeat server";
-  logEvent("w","No RadioBeat device found");
+  $("ctaHelp").textContent="How to run it";
+  logEvent("i","Published demo - no sensors attached");
   // Demo stays a deliberate choice here too, exactly as it is on the server.
   render({ok:false, disconnected:true, reason:"device not connected"});
 }
@@ -1576,6 +1590,10 @@ $("ctaDemo").addEventListener("click",async()=>{
   logEvent("w","Demo mode on — these are simulated vitals, not a real person");
 });
 $("ctaHelp").addEventListener("click",()=>{
+  if(standalone){
+    window.open("https://github.com/adhvi29/radiobeat-monitor","_blank","noopener");
+    return;
+  }
   gotoView("settings");
   logEvent("i","Connect the transmitter, plug the receiver in over USB, then restart the server");
 });
