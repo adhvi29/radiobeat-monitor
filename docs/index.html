@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* RadioBeat Monitor — light "raspberry white" theme, matched to the project
+/* RadioBeat Monitor: light "raspberry white" theme, matched to the project
    site's design language: near-white ground, Apple-ink text, hairline borders,
    soft elevation, tight display typography. */
 :root{
@@ -222,7 +222,7 @@ footer{margin-top:26px;color:var(--faint);font-size:12px;line-height:1.65}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   Sign in — split layout: brand story on the left, form on the right.
+   Sign in: brand story on the left, form on the right.
    ══════════════════════════════════════════════════════════════════════ */
 #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;
   padding:28px;background:
@@ -535,7 +535,7 @@ nav button{position:relative}
           <span class="vhead"><span class="card-title">Breathing</span>
             <span class="tag-ok" title="Measured to within about 0.5 breaths per minute.">measured</span></span>
           <span class="card-badge" id="peopleTxt"></span></div>
-        <div class="vnum"><span class="val" id="brVal">—</span>
+        <div class="vnum"><span class="val" id="brVal">–</span>
           <span class="unit">breaths / min</span>
           <span class="trend" id="brTrend" style="display:none"></span></div>
         <canvas class="wave" id="brWave"></canvas>
@@ -551,7 +551,7 @@ nav button{position:relative}
             <span class="card-title">Heart rate</span>
             <span class="tag-exp" title="Measured error is about 10 BPM. A heartbeat moves the chest ~0.45 mm, close to this hardware's limit.">experimental</span></span>
           <span class="card-badge" id="hrBadge"></span></div>
-        <div class="vnum"><span class="val" id="hrVal">—</span>
+        <div class="vnum"><span class="val" id="hrVal">–</span>
           <span class="unit">BPM</span>
           <span class="trend" id="hrTrend" style="display:none"></span></div>
         <canvas class="wave" id="hrWave"></canvas>
@@ -574,13 +574,13 @@ nav button{position:relative}
         </div>
         <div class="metrics">
           <div class="metric" id="mRmssd"><div class="metric-k">Beat variability</div>
-            <div class="metric-v">—</div><div class="metric-n">RMSSD</div></div>
+            <div class="metric-v">–</div><div class="metric-n">RMSSD</div></div>
           <div class="metric" id="mPnn"><div class="metric-k">Big jumps</div>
-            <div class="metric-v">—</div><div class="metric-n">pNN50</div></div>
+            <div class="metric-v">–</div><div class="metric-n">pNN50</div></div>
           <div class="metric" id="mCv"><div class="metric-k">Spread</div>
-            <div class="metric-v">—</div><div class="metric-n">coefficient of variation</div></div>
+            <div class="metric-v">–</div><div class="metric-n">coefficient of variation</div></div>
           <div class="metric" id="mEnt"><div class="metric-k">Unpredictability</div>
-            <div class="metric-v">—</div><div class="metric-n">Shannon entropy</div></div>
+            <div class="metric-v">–</div><div class="metric-n">Shannon entropy</div></div>
         </div>
       </div>
       <details class="adv">
@@ -608,8 +608,8 @@ nav button{position:relative}
       </div>
       <canvas id="histChart"></canvas>
       <div style="display:flex;gap:18px;margin-top:12px;font-size:12px;color:var(--faint)">
-        <span><b style="color:var(--rasp)">—</b> heart rate</span>
-        <span><b style="color:var(--violet)">—</b> breathing</span>
+        <span><b style="color:var(--rasp)">▬</b> heart rate</span>
+        <span><b style="color:var(--violet)">▬</b> breathing</span>
         <span><b style="color:var(--rasp)">▮</b> alert</span>
       </div>
       <div id="detAlerts" style="margin-top:14px"></div>
@@ -628,7 +628,7 @@ nav button{position:relative}
       <div class="set-row">
         <div><div class="set-k">Alert on irregular rhythm</div>
           <div class="set-d">Records an alert when irregularity persists across
-            several windows — not on a single noisy reading.</div></div>
+            several windows, not on a single noisy reading.</div></div>
         <div class="sw on" id="sAfib"></div>
       </div>
       <div class="set-row">
@@ -787,11 +787,11 @@ function enterApp(){
   paintAccount();
   if(user && user.demo){
     $("acctK").textContent="Demo account";
-    $("acctD").textContent=user.email+" — a demonstration sign-in. Nothing is "+
+    $("acctD").textContent=user.email+". Demonstration sign-in. Nothing is "+
       "stored and no account exists. Run RadioBeat yourself for real accounts.";
     $("signOut").classList.remove("hide");
   } else if(user){ $("acctK").textContent="Signed in";
-            $("acctD").textContent=user.email+" — session summaries sync to your Supabase project.";
+            $("acctD").textContent=user.email+". Session summaries sync to your Supabase project.";
             $("signOut").classList.remove("hide"); }
   boot();
 }
@@ -823,11 +823,11 @@ if(SB){
 } else {
   /* No Supabase configured (e.g. the public demo). Rather than hide sign-in
      entirely, run a DEMO sign-in so the full flow can be shown. It accepts any
-     credentials, stores nothing and contacts no server — and says so, so it is
+     credentials, stores nothing and contacts no server, and says so, so it is
      never mistaken for real authentication. */
   demoAuth=true;
   $("gateSub").innerHTML="<b style='color:#8b90a3'>Demo sign-in.</b> "+
-    "Any email and password will work — nothing is stored or sent anywhere. "+
+    "Any email and password will work. Nothing is stored or sent anywhere. "+
     "Running the monitor yourself gives you real accounts.";
   $("gGo").addEventListener("click",demoSignIn);
   $("gPass").addEventListener("keydown",e=>{ if(e.key==="Enter") demoSignIn(); });
@@ -971,7 +971,7 @@ function setNum(id, val, dp){
   const el=$(id);
   if(val===null||!isFinite(val)){
     if(tweens[id]) cancelAnimationFrame(tweens[id]);
-    tweens[id]=null; el.dataset.v=""; el.textContent="—"; return;
+    tweens[id]=null; el.dataset.v=""; el.textContent="–"; return;
   }
   const from = el.dataset.v==="" || el.dataset.v===undefined
              ? val : parseFloat(el.dataset.v);
@@ -988,7 +988,7 @@ function setNum(id, val, dp){
 }
 
 function setMetric(id,val,hot,suf){
-  const el=$(id); el.querySelector(".metric-v").textContent=(val===null?"—":val+(suf||""));
+  const el=$(id); el.querySelector(".metric-v").textContent=(val===null?"–":val+(suf||""));
   el.classList.toggle("hot",!!hot);
 }
 
@@ -1012,7 +1012,7 @@ function render(d){
       : (standalone
           ? "Recording needs the RadioBeat server running on a computer with the sensors attached."
           : (d.demo
-              ? "Recording is off while demo mode is on — these are not real measurements."
+              ? "Recording is off while demo mode is on. These are not real measurements."
               : "Saves tonight's readings"));
   }
   if(!d.ok){
@@ -1021,7 +1021,7 @@ function render(d){
       if(standalone){
         /* No server at all: this is the published demo, opened from the web.
            Nothing is broken - there was never any hardware to find. */
-        $("heroState").textContent="Demo site — no sensors here";
+        $("heroState").textContent="Demo site: no sensors here";
         $("heroSub").innerHTML="You are viewing the published version of "+
           "RadioBeat, which has no sensors attached. Turn on demo mode to "+
           "explore the interface, or run the monitor on a computer with the "+
@@ -1073,7 +1073,7 @@ function render(d){
         logEvent("w","Sensor offline - no data from the boards"); }
     } else {
       $("hero").className="hero"; $("heroState").textContent="Warming up";
-      $("heroSub").textContent=(d.reason||"")+" — this takes about 30 seconds.";
+      $("heroSub").textContent=(d.reason||"")+". This takes about 30 seconds.";
     }
     return;
   }
@@ -1111,13 +1111,13 @@ function render(d){
   } else if(win < 90){
     const pct = Math.min(100, win / HRWIN * 100);
     const mm = String(Math.floor(win/60)), ss = String(win%60).padStart(2,"0");
-    note.innerHTML = "Building a reading — needs about 4 minutes of "+
+    note.innerHTML = "Building a reading. Needs about 4 minutes of "+
       "stillness. <b>"+mm+":"+ss+"</b> so far."+
       '<div class="hr-bar"><i style="width:'+pct.toFixed(0)+'%"></i></div>';
   } else {
     const mm = String(Math.floor(win/60)), ss = String(win%60).padStart(2,"0");
     note.innerHTML = "Averaged over "+mm+":"+ss+". Typically within about "+
-      "±10 BPM — treat as a trend, not an exact figure.";
+      "±10 BPM. Treat as a trend, not an exact figure.";
   }
 
   /* The indicator beats at the measured rate - the clearest signal that the
@@ -1146,7 +1146,7 @@ function render(d){
     "signal quality &nbsp;"+d.quality+"/3<br>"+
     "packets &nbsp;"+(d.rate||0)+"/s<br>"+
     "machines filtered &nbsp;"+(d.machines||0)+"<br>"+
-    "raw verdict &nbsp;"+(d.rhythm||"—");
+    "raw verdict &nbsp;"+(d.rhythm||"–");
 
   let cls="",state="",sub="";
   if(d.motion){ cls="warn"; state="Movement detected";
@@ -1161,9 +1161,9 @@ function render(d){
         "which means it has not found a real heartbeat yet. Sit still between "+
         "the two boards, about a metre apart."
       : "Breathing is being tracked. The heartbeat is not yet clear enough to "+
-        "judge rhythm — "+(d.rhythm||"").replace(/^cannot assess\s*/,"")+"."); }
+        "judge rhythm: "+(d.rhythm||"").replace(/^cannot assess\s*/,"")+"."); }
   else if(d.sustained){ cls="alert"; state="Irregular rhythm detected";
-    sub="Beat-to-beat timing has stayed highly irregular, a pattern consistent with atrial fibrillation. This is not a diagnosis — please consult a doctor."; }
+    sub="Beat-to-beat timing has stayed highly irregular, a pattern consistent with atrial fibrillation. This is not a diagnosis. Please consult a doctor."; }
   else if(d.rhythm_score>=3){ cls="warn"; state="Checking irregularity…";
     sub="Some irregular beats seen. Waiting to confirm across several windows before raising an alert."; }
   else if(d.rhythm_score===2){ cls="warn"; state="Borderline rhythm";
@@ -1302,7 +1302,7 @@ function applySettings(s){
     $(i).disabled = !usable;
     $(i).style.opacity = usable ? "" : ".45";
   });
-  $("simNeeds").textContent = usable ? "" : "— needs the RadioBeat server";
+  $("simNeeds").textContent = usable ? "" : "(needs the RadioBeat server)";
   $("sPerson").value=s.person||"";
   $("sAfib").classList.toggle("on",!!s.alert_afib);
   $("sDemo").classList.toggle("on",!!s.demo_mode);
@@ -1335,7 +1335,7 @@ function setSim(kind){
   paintSim();
   fetch("/api/sim/"+(sim||"off"),{method:"POST"}).catch(()=>{});
   logEvent(sim?"w":"i", sim?("Forcing a "+(sim==="afib"?"AFib":"normal")+
-      " rhythm — this is simulated, not measured") : "Rhythm override off");
+      " rhythm. This is simulated, not measured") : "Rhythm override off");
 }
 $("simA").addEventListener("click",()=>setSim("afib"));
 $("simN").addEventListener("click",()=>setSim("normal"));
@@ -1511,7 +1511,7 @@ function paintAccount(){
     av.classList.remove("guest");
     $("amName").textContent=(user.user_metadata&&user.user_metadata.display_name)
                             || (user.email||"").split("@")[0];
-    $("amSub").textContent = user.demo ? "Demo account — nothing is stored"
+    $("amSub").textContent = user.demo ? "Demo account, nothing is stored"
                                        : (user.email||"");
     $("amSignOutTxt").textContent="Sign out";
     $("amPassword").style.display = (SB && !user.demo) ? "" : "none";
@@ -1587,7 +1587,7 @@ $("ctaDemo").addEventListener("click",async()=>{
   if(standalone){ settings.demo_mode=true; $("sDemo").classList.add("on");
                   startLocalDemo(); return; }
   await saveSettings({demo_mode:true});
-  logEvent("w","Demo mode on — these are simulated vitals, not a real person");
+  logEvent("w","Demo mode on. These are simulated vitals, not a real person");
 });
 $("ctaHelp").addEventListener("click",()=>{
   if(standalone){

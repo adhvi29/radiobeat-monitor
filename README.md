@@ -1,6 +1,6 @@
 # RadioBeat Monitor
 
-The monitoring app for [RadioBeat](https://github.com/adhvi29/radiobeat) —
+The monitoring app for [RadioBeat](https://github.com/adhvi29/radiobeat):
 contactless breathing, heart rate and irregular-rhythm detection from ordinary
 WiFi signals.
 
