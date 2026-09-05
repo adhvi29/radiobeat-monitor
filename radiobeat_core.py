@@ -52,7 +52,7 @@ SC_IDX  = np.arange(-32, 32, dtype=float)
 
 buf  = deque(maxlen=12000)    # (device_time_s, complex[64])
 lock = threading.Lock()
-stats = {"pkts": 0, "rate": 0.0, "bad": 0, "baud": 0}
+stats = {"pkts": 0, "rate": 0.0, "bad": 0, "baud": 0, "last_pkt": 0.0}
 
 
 # ── serial reader thread ──────────────────────────────────────────────────────
@@ -116,6 +116,7 @@ def reader():
                     buf.append((ts, z))
                 count += 1
                 stats["pkts"] += 1
+                stats["last_pkt"] = time.monotonic()
 
             now = time.monotonic()
             if now - last_report >= 1.0:

@@ -640,14 +640,22 @@ nav button{position:relative}
 
     <div class="card" style="margin-bottom:16px">
       <div class="card-title" style="margin-bottom:6px">Demonstration</div>
+      <div class="set-d" style="margin:0 0 4px;max-width:64ch">
+        Two separate tools. <b>Demo mode</b> replaces everything when you have no
+        sensors. <b>Force a rhythm</b> keeps the real measurements and overrides
+        only the rhythm verdict, so the alert can be shown during a live demo.
+        Anything simulated is always labelled on screen.
+      </div>
       <div class="set-row">
-        <div><div class="set-k">Simulated rhythm</div>
-          <div class="set-d">Feeds a synthetic rhythm so the alert can be shown to
-            an audience. Always labelled SIMULATED on screen — a real arrhythmia
-            cannot be induced on demand.</div></div>
+        <div><div class="set-k">Force a rhythm <span id="simNeeds"
+              style="font-weight:500;color:var(--faint)"></span></div>
+          <div class="set-d">Overrides the rhythm verdict only. A real arrhythmia
+            cannot be induced on demand, so this is how the alert gets
+            demonstrated. Forced readings are never saved to a session.</div></div>
         <div class="set-c" style="display:flex;gap:8px">
           <button class="btn sm" id="simN">Normal</button>
           <button class="btn sm" id="simA">AFib</button>
+          <button class="btn sm hide" id="simOff">Off</button>
         </div>
       </div>
     </div>
@@ -717,6 +725,7 @@ const SB=(window.SUPABASE_CONFIG&&window.SUPABASE_CONFIG.url&&
 const LS="radiobeat.session";
 let token=null, refreshTok=null, user=null, mode="signin", demoAuth=false;
 let events=[], lastKey="", sessionId=null, sim=null, settings={};
+let lastCanRecord=null;
 
 /* ══ auth ══ */
 function saveSession(j){
@@ -974,12 +983,22 @@ function render(d){
   sp.className="pill "+(d.demo?"demo":(d.ok?"live":""));
   $("srcTxt").textContent=d.demo?"demo data":(d.ok?"monitoring":"starting");
 
-  if(d.session!==sessionId){
-    sessionId=d.session;
+  /* Recording only means something when the readings are real. In demo mode
+     the server deliberately writes nothing, so offering a Start button would
+     produce a session that claims to be recording and saves nothing. */
+  const canRecord = !standalone && !d.demo;
+  $("sessBtn").disabled = !canRecord;
+  $("sessBtn").style.opacity = canRecord ? "" : ".45";
+  if(d.session!==sessionId || canRecord!==lastCanRecord){
+    sessionId=d.session; lastCanRecord=canRecord;
     $("sessBtn").textContent=sessionId?"Stop session":"Start session";
-    $("sessTxt").innerHTML=sessionId
+    $("sessTxt").innerHTML = sessionId
       ? '<span class="rec-chip"><span class="dot"></span>Recording #'+sessionId+'</span>'
-      : "Saves tonight's readings";
+      : (standalone
+          ? "Recording needs the RadioBeat server running on a computer with the sensors attached."
+          : (d.demo
+              ? "Recording is off while demo mode is on — these are not real measurements."
+              : "Saves tonight's readings"));
   }
   if(!d.ok){
     if(d.disconnected){
@@ -1034,6 +1053,10 @@ function render(d){
      so show nothing rather than a plausible-looking vital sign. Displaying
      "48 BPM" beside "No one detected" is worse than showing a dash. */
   $("heroCta").classList.add("hide");
+
+  // The server owns the override; mirror it so a reload cannot desync.
+  if((d.sim||null) !== sim){ sim = d.sim||null; paintSim(); }
+
   const trustVitals = d.present && !d.motion;
   const brShown = trustVitals && d.breath>0;
   setNum("brVal", brShown ? d.breath : null, 1);
@@ -1055,7 +1078,9 @@ function render(d){
                beat.style.animationDuration=(60/d.hr).toFixed(2)+"s"; }
   else beat.classList.remove("on");
   $("peopleTxt").textContent = d.people===1?"1 person":(d.people>1?d.people+" people":"");
-  $("hrBadge").textContent = !trustVitals ? "" : (d.hr_locked?"locked":"searching");
+  $("hrBadge").textContent = !trustVitals ? ""
+      : d.hr_locked ? "locked"
+      : (d.hr_steady === false ? "unsteady" : "searching");
   pushWave("brWave",d.breath_wave);
   pushWave("hrWave",d.heart_wave);
 
@@ -1082,8 +1107,12 @@ function render(d){
   else if(!d.present){ state="No one detected";
     sub="Nobody is currently within range of the sensors."; }
   else if(!d.rhythm_trust){ state="Measuring…";
-    sub="Breathing is being tracked. The heartbeat is not yet clear enough to judge rhythm — "+
-        (d.rhythm||"").replace(/^cannot assess\s*/,"")+"."; }
+    sub=(d.hr_steady===false
+      ? "Breathing is being tracked, but the pulse estimate is jumping around, "+
+        "which means it has not found a real heartbeat yet. Sit still between "+
+        "the two boards, about a metre apart."
+      : "Breathing is being tracked. The heartbeat is not yet clear enough to "+
+        "judge rhythm — "+(d.rhythm||"").replace(/^cannot assess\s*/,"")+"."); }
   else if(d.sustained){ cls="alert"; state="Irregular rhythm detected";
     sub="Beat-to-beat timing has stayed highly irregular, a pattern consistent with atrial fibrillation. This is not a diagnosis — please consult a doctor."; }
   else if(d.rhythm_score>=3){ cls="warn"; state="Checking irregularity…";
@@ -1135,6 +1164,10 @@ async function syncSession(id){
 $("sessBtn").addEventListener("click",async()=>{
   if(standalone){
     logEvent("w","Recording is unavailable here - it needs the RadioBeat server");
+    return;
+  }
+  if(settings.demo_mode && !sessionId){
+    logEvent("w","Turn demo mode off to record - demo readings are not saved");
     return;
   }
   const stopping = !!sessionId, id = sessionId;
@@ -1214,6 +1247,12 @@ function drawHistory(rd,alerts){
 /* ══ settings ══ */
 function applySettings(s){
   settings=s;
+  const usable = !standalone;
+  ["simN","simA"].forEach(i=>{
+    $(i).disabled = !usable;
+    $(i).style.opacity = usable ? "" : ".45";
+  });
+  $("simNeeds").textContent = usable ? "" : "— needs the RadioBeat server";
   $("sPerson").value=s.person||"";
   $("sAfib").classList.toggle("on",!!s.alert_afib);
   $("sDemo").classList.toggle("on",!!s.demo_mode);
@@ -1236,16 +1275,23 @@ $("sDemo").addEventListener("click",()=>{
   saveSettings({demo_mode:next});
 });
 $("sAbsent").addEventListener("click",()=>saveSettings({alert_absent:!settings.alert_absent}));
-function setSim(kind){
-  sim=(sim===kind)?null:kind;
+function paintSim(){
   $("simA").classList.toggle("on",sim==="afib");
   $("simN").classList.toggle("on",sim==="normal");
+  $("simOff").classList.toggle("hide", !sim);
+}
+function setSim(kind){
+  sim=(sim===kind)?null:kind;
+  paintSim();
   fetch("/api/sim/"+(sim||"off"),{method:"POST"}).catch(()=>{});
-  logEvent("i", sim?("Simulated "+(sim==="afib"?"AFib":"normal")+" rhythm on")
-                  :"Simulation off");
+  logEvent(sim?"w":"i", sim?("Forcing a "+(sim==="afib"?"AFib":"normal")+
+      " rhythm — this is simulated, not measured") : "Rhythm override off");
 }
 $("simA").addEventListener("click",()=>setSim("afib"));
 $("simN").addEventListener("click",()=>setSim("normal"));
+$("simOff").addEventListener("click",()=>{ sim=null; paintSim();
+  fetch("/api/sim/off",{method:"POST"}).catch(()=>{});
+  logEvent("i","Rhythm override off"); });
 
 /* ══ boot ══ */
 /* Standalone demo: with no server (e.g. opened from GitHub Pages) there is
@@ -1292,10 +1338,7 @@ let demoTimer=null;
 function goStandalone(){
   if(standalone) return;
   standalone=true;
-  $("sessBtn").disabled=true;
-  $("sessBtn").style.opacity=".45";
   $("sessBtn").title="Recording needs the RadioBeat server";
-  $("sessTxt").textContent="Recording needs the RadioBeat server running on a computer with the sensors attached.";
   logEvent("w","No RadioBeat device found");
   // Demo stays a deliberate choice here too, exactly as it is on the server.
   render({ok:false, disconnected:true, reason:"device not connected"});
